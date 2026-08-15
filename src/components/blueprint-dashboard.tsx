@@ -1,17 +1,29 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   CheckCircle2Icon,
   LayersIcon,
   TriangleAlertIcon,
 } from "lucide-react";
 
+import { ApiEndpointsCard } from "@/components/api-endpoints-card";
 import { ArchitectureCard } from "@/components/architecture-card";
+import { AuthenticationCard } from "@/components/authentication-card";
+import { ComplexityCard } from "@/components/complexity-card";
 import { CopyButton } from "@/components/copy-button";
+import { DatabaseSchemaCard } from "@/components/database-schema-card";
+import { DeploymentCard } from "@/components/deployment-card";
 import { DiagramCard } from "@/components/diagram-card";
 import { ExampleIdeas } from "@/components/example-ideas";
+import { FutureEnhancementsCard } from "@/components/future-enhancements-card";
 import { GenerationProgress } from "@/components/generation-progress";
+import { KeyFeaturesCard } from "@/components/key-features-card";
+import { MvpScopeCard } from "@/components/mvp-scope-card";
+import { ProjectSummaryCard } from "@/components/project-summary-card";
+import { RisksCard } from "@/components/risks-card";
 import { RoadmapCard } from "@/components/roadmap-card";
+import { TargetUsersCard } from "@/components/target-users-card";
 import { TechStackCard } from "@/components/tech-stack-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +35,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { formatBlueprintForCopy } from "@/lib/utils/blueprint-format";
+import { generateMermaidFromArchitecture } from "@/lib/utils/generate-mermaid";
 import type { Blueprint } from "@/types/blueprint";
 
 export type BlueprintDashboardStatus =
@@ -64,18 +77,53 @@ export function BlueprintDashboard({
         <DashboardErrorState message={errorMessage} onRetry={onRetry} />
       ) : null}
       {status === "success" && blueprint ? (
-        <div className="flex flex-col gap-8 sm:gap-10">
-          <DiagramCard diagram={blueprint.diagram} />
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
-            <ArchitectureCard
-              architecture={blueprint.architecture}
-              architectureReasoning={blueprint.architectureReasoning}
-            />
-            <TechStackCard techStack={blueprint.techStack} />
-          </div>
-          <RoadmapCard roadmap={blueprint.roadmap} />
-        </div>
+        <BlueprintSections blueprint={blueprint} />
       ) : null}
+    </div>
+  );
+}
+
+function BlueprintSections({ blueprint }: { blueprint: Blueprint }) {
+  const diagram = useMemo(
+    () => generateMermaidFromArchitecture(blueprint.architecture),
+    [blueprint.architecture],
+  );
+
+  return (
+    <div className="flex flex-col gap-8 sm:gap-10">
+      <ProjectSummaryCard projectSummary={blueprint.projectSummary} />
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
+        <TargetUsersCard targetUsers={blueprint.targetUsers} />
+        <KeyFeaturesCard keyFeatures={blueprint.keyFeatures} />
+      </div>
+
+      <MvpScopeCard mvpScope={blueprint.mvpScope} />
+
+      <DiagramCard diagram={diagram} />
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
+        <ArchitectureCard architecture={blueprint.architecture} />
+        <TechStackCard techStack={blueprint.techStack} />
+      </div>
+
+      <DatabaseSchemaCard databaseSchema={blueprint.databaseSchema} />
+
+      <ApiEndpointsCard apiEndpoints={blueprint.apiEndpoints} />
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
+        <AuthenticationCard authentication={blueprint.authentication} />
+        <DeploymentCard deployment={blueprint.deployment} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
+        <ComplexityCard estimatedComplexity={blueprint.estimatedComplexity} />
+        <RisksCard risks={blueprint.risks} />
+      </div>
+
+      <FutureEnhancementsCard futureEnhancements={blueprint.futureEnhancements} />
+
+      <RoadmapCard roadmap={blueprint.roadmap} />
     </div>
   );
 }
@@ -89,6 +137,15 @@ function DashboardHeader({
   idea?: string;
   blueprint?: Blueprint | null;
 }) {
+  const copyText = useMemo(() => {
+    if (!blueprint) {
+      return "";
+    }
+
+    const diagram = generateMermaidFromArchitecture(blueprint.architecture);
+    return formatBlueprintForCopy(blueprint, diagram);
+  }, [blueprint]);
+
   return (
     <div className="flex flex-col gap-5 sm:gap-6">
       <div className="flex flex-wrap items-center gap-3">
@@ -128,8 +185,10 @@ function DashboardHeader({
         ) : null}
         {status === "empty" ? (
           <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Describe your software idea and generate a complete implementation
-            blueprint — architecture, stack, diagram, and roadmap.
+            Describe your software idea and generate a complete,
+            developer-grade implementation plan — users, features, scope,
+            architecture, stack, database, API, auth, deployment, risks, and
+            a week-by-week roadmap.
           </p>
         ) : null}
         {status === "loading" ? (
@@ -139,10 +198,7 @@ function DashboardHeader({
         ) : null}
       </div>
       {status === "success" && blueprint ? (
-        <CopyButton
-          text={formatBlueprintForCopy(blueprint)}
-          label="Copy all"
-        />
+        <CopyButton text={copyText} label="Copy all" />
       ) : null}
     </div>
   );
@@ -163,8 +219,9 @@ function DashboardEmptyState({
           Describe your software idea
         </EmptyTitle>
         <EmptyDescription className="text-base sm:text-lg">
-          Generate a complete implementation blueprint with architecture,
-          technology, diagram, and a four-week roadmap.
+          Generate a complete implementation blueprint — from target users
+          and MVP scope to database schema, API endpoints, and a week-by-week
+          roadmap.
         </EmptyDescription>
       </EmptyHeader>
       {onTryExample ? (

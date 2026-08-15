@@ -1,9 +1,8 @@
 import { AIProviderError } from "@/lib/ai/types";
 
-const JSON_FENCE_PATTERN = /```(?:json)?\s*([\s\S]*?)```/i;
-
 /**
- * Parse JSON from a model response. Handles raw JSON and fenced code blocks.
+ * Parse JSON from a model response. Tolerates explanatory text before/after
+ * the JSON object.
  */
 export function parseJsonFromModelContent(content: string): unknown {
   const trimmed = content.trim();
@@ -12,26 +11,25 @@ export function parseJsonFromModelContent(content: string): unknown {
     throw new AIProviderError("Model returned an empty response.");
   }
 
-  const candidates = [trimmed];
-
-  const fencedMatch = trimmed.match(JSON_FENCE_PATTERN);
-  if (fencedMatch?.[1]) {
-    candidates.unshift(fencedMatch[1].trim());
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // fall through to brace extraction
   }
 
   const objectStart = trimmed.indexOf("{");
   const objectEnd = trimmed.lastIndexOf("}");
-  if (objectStart !== -1 && objectEnd > objectStart) {
-    candidates.push(trimmed.slice(objectStart, objectEnd + 1));
-  }
 
-  for (const candidate of candidates) {
+  if (objectStart !== -1 && objectEnd > objectStart) {
+    const jsonSubstring = trimmed.slice(objectStart, objectEnd + 1);
+
     try {
-      return JSON.parse(candidate);
+      return JSON.parse(jsonSubstring);
     } catch {
-      // try next candidate
+      // fall through to error
     }
   }
 
+  console.error("[blueprint] Failed to parse model content as JSON:", content);
   throw new AIProviderError("Model response was not valid JSON.");
 }

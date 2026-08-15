@@ -54,6 +54,21 @@ export function TechStackCard({ techStack }: TechStackCardProps) {
               </div>
             </li>
           ))}
+          <li className="flex flex-col">
+            <Separator />
+            <div className="flex flex-col gap-2 py-6 last:pb-0 sm:flex-row sm:items-baseline sm:gap-10">
+              <p className="w-28 shrink-0 font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                Tooling
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {techStack.tooling.map((tool) => (
+                  <Badge key={tool} variant="outline">
+                    {tool}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </li>
         </ul>
       </CardContent>
     </Card>

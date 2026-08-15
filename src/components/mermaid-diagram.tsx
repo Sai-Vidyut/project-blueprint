@@ -72,20 +72,25 @@ export function MermaidDiagram({ source }: MermaidDiagramProps) {
 
   if (state === "error") {
     return (
-      <Empty className="min-h-56 border border-dashed bg-muted/10 py-12 sm:min-h-72 sm:py-16">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <ImageOffIcon />
-          </EmptyMedia>
-          <EmptyTitle className="text-lg sm:text-xl">
-            Diagram preview unavailable
-          </EmptyTitle>
-          <EmptyDescription className="text-base sm:text-lg">
-            The architecture is still in your blueprint. Copy the diagram source
-            from the card actions above.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
+      <div className="flex flex-col gap-4">
+        <Empty className="min-h-40 border border-dashed bg-muted/10 py-8 sm:py-10">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <ImageOffIcon />
+            </EmptyMedia>
+            <EmptyTitle className="text-lg sm:text-xl">
+              Diagram preview unavailable
+            </EmptyTitle>
+            <EmptyDescription className="text-base sm:text-lg">
+              The architecture is still in your blueprint. Here is the generated
+              diagram source.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+        <pre className="overflow-x-auto rounded-2xl border bg-muted/10 p-4 text-sm text-muted-foreground sm:p-6">
+          <code>{source.trim()}</code>
+        </pre>
+      </div>
     );
   }
 

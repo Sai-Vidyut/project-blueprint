@@ -6,4 +6,25 @@
  * Import from here when you only need the shape (components, UI code);
  * import the schema directly when you need runtime validation.
  */
-export type { Blueprint, TechStack, Roadmap } from "@/lib/schemas/blueprint";
+export type {
+  Blueprint,
+  ProjectSummary,
+  TargetUser,
+  KeyFeature,
+  MvpScope,
+  ArchitectureComponent,
+  ArchitectureRelationship,
+  Architecture,
+  TechStack,
+  DatabaseColumn,
+  DatabaseTable,
+  ApiEndpoint,
+  AuthenticationStrategy,
+  DeploymentComponent,
+  DeploymentArchitecture,
+  EstimatedComplexity,
+  Risk,
+  RoadmapTask,
+  RoadmapWeek,
+  Roadmap,
+} from "@/lib/schemas/blueprint";

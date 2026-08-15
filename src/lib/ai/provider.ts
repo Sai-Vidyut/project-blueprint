@@ -6,7 +6,7 @@ import {
   buildBlueprintUserPrompt,
 } from "@/prompts/blueprint";
 
-const REQUEST_TIMEOUT_MS = 28_000;
+const REQUEST_TIMEOUT_MS = 600_000;
 
 interface ChatCompletionResponse {
   choices?: Array<{
@@ -30,9 +30,12 @@ export function createAIProvider(config: AIProviderConfig): AIProvider {
   return {
     async generateBlueprint(input) {
       const url = `${config.baseUrl?.replace(/\/$/, "") ?? "https://openrouter.ai/api/v1"}/chat/completions`;
+      const userPrompt = buildBlueprintUserPrompt(input.idea);
+      const promptLength = BLUEPRINT_SYSTEM_PROMPT.length + userPrompt.length;
 
       console.log("[blueprint] OpenRouter model:", config.model);
       console.log("[blueprint] OpenRouter URL:", url);
+      console.log("[blueprint] Prompt length:", promptLength);
 
       let response: Response;
 
@@ -47,14 +50,18 @@ export function createAIProvider(config: AIProviderConfig): AIProvider {
             model: config.model,
             messages: [
               { role: "system", content: BLUEPRINT_SYSTEM_PROMPT },
-              { role: "user", content: buildBlueprintUserPrompt(input.idea) },
+              { role: "user", content: userPrompt },
             ],
-            response_format: { type: "json_object" },
           }),
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
       } catch (error) {
         if (error instanceof Error && error.name === "TimeoutError") {
+          console.error("[blueprint] Request timed out:", {
+            model: config.model,
+            timeoutMs: REQUEST_TIMEOUT_MS,
+            promptLength,
+          });
           throw new AIProviderError("Blueprint generation timed out.", error);
         }
 
@@ -81,6 +88,12 @@ export function createAIProvider(config: AIProviderConfig): AIProvider {
         );
       }
 
+      if (payload.error) {
+        throw new AIProviderError(
+          `OpenRouter error: ${payload.error.message ?? "Unknown error"}`,
+        );
+      }
+
       const content = payload.choices?.[0]?.message?.content;
 
       if (!content) {
@@ -88,6 +101,11 @@ export function createAIProvider(config: AIProviderConfig): AIProvider {
       }
 
       const parsed = parseJsonFromModelContent(content);
+      console.log(
+        "[blueprint] Parsed model output:",
+        JSON.stringify(parsed, null, 2),
+      );
+
       const validated = blueprintSchema.safeParse(parsed);
 
       if (!validated.success) {

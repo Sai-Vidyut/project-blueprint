@@ -11,13 +11,6 @@ import {
 import { formatRoadmapForCopy } from "@/lib/utils/blueprint-format";
 import type { Roadmap } from "@/types/blueprint";
 
-const WEEK_ROWS: Array<{ key: keyof Roadmap; label: string }> = [
-  { key: "week1", label: "Week 1" },
-  { key: "week2", label: "Week 2" },
-  { key: "week3", label: "Week 3" },
-  { key: "week4", label: "Week 4" },
-];
-
 type RoadmapCardProps = {
   roadmap: Roadmap;
 };
@@ -28,24 +21,23 @@ export function RoadmapCard({ roadmap }: RoadmapCardProps) {
       <CardHeader className="border-b">
         <CardTitle className="text-2xl sm:text-3xl">Roadmap</CardTitle>
         <CardDescription className="text-base sm:text-lg">
-          Four weeks of focused delivery
+          {roadmap.length} weeks of focused delivery
         </CardDescription>
         <CardAction className="flex items-center gap-1">
           <CopyButton
             text={formatRoadmapForCopy(roadmap)}
             label="Copy roadmap"
           />
-          <Badge variant="outline">04</Badge>
+          <Badge variant="outline">14</Badge>
         </CardAction>
       </CardHeader>
       <CardContent>
         <ol className="flex flex-col">
-          {WEEK_ROWS.map((week, weekIndex) => {
-            const tasks = roadmap[week.key];
-            const isLastWeek = weekIndex === WEEK_ROWS.length - 1;
+          {roadmap.map((week, weekIndex) => {
+            const isLastWeek = weekIndex === roadmap.length - 1;
 
             return (
-              <li key={week.key} className="flex gap-5 sm:gap-8">
+              <li key={`${week.theme}-${weekIndex}`} className="flex gap-5 sm:gap-8">
                 <div className="flex flex-col items-center">
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-muted font-mono text-sm">
                     {weekIndex + 1}
@@ -55,26 +47,47 @@ export function RoadmapCard({ roadmap }: RoadmapCardProps) {
                   ) : null}
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-5 pb-10 last:pb-0">
-                  <p className="font-heading text-xl tracking-tight sm:text-2xl">
-                    {week.label}
-                  </p>
+                  <div className="flex flex-col gap-1">
+                    <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                      Week {weekIndex + 1}
+                    </p>
+                    <p className="font-heading text-xl tracking-tight sm:text-2xl">
+                      {week.theme}
+                    </p>
+                  </div>
+
+                  <ul className="flex flex-wrap gap-2">
+                    {week.goals.map((goal) => (
+                      <li key={goal}>
+                        <Badge variant="secondary" className="font-normal">
+                          {goal}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+
                   <ul className="flex flex-col gap-0 border-l border-border">
-                    {tasks.map((task, taskIndex) => {
-                      const isLastTask = taskIndex === tasks.length - 1;
+                    {week.tasks.map((task, taskIndex) => {
+                      const isLastTask = taskIndex === week.tasks.length - 1;
 
                       return (
                         <li
-                          key={task}
-                          className="relative flex gap-4 py-3 pl-6 text-base leading-relaxed sm:text-lg"
+                          key={task.task}
+                          className="relative flex flex-col gap-1 py-3 pl-6 text-base leading-relaxed sm:text-lg"
                         >
                           <span
                             className="absolute top-[1.35rem] left-0 h-px w-4 bg-border"
                             aria-hidden="true"
                           />
-                          <span className="font-mono text-sm text-muted-foreground">
-                            {isLastTask ? "└" : "├"}
+                          <span className="flex gap-4">
+                            <span className="font-mono text-sm text-muted-foreground">
+                              {isLastTask ? "└" : "├"}
+                            </span>
+                            <span className="text-pretty">{task.task}</span>
                           </span>
-                          <span className="text-pretty">{task}</span>
+                          <span className="pl-9 text-sm text-muted-foreground">
+                            → {task.deliverable}
+                          </span>
                         </li>
                       );
                     })}
