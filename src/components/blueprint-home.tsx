@@ -8,7 +8,6 @@ import {
   type BlueprintDashboardStatus,
 } from "@/components/blueprint-dashboard";
 import { ExampleIdeas } from "@/components/example-ideas";
-import { runGenerationProgress } from "@/components/generation-progress";
 import { IdeaForm } from "@/components/idea-form";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +18,6 @@ export function BlueprintHome() {
   const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
   const [status, setStatus] = useState<BlueprintDashboardStatus>("empty");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [progressStep, setProgressStep] = useState(0);
   const resultsRef = useRef<HTMLElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -28,15 +26,11 @@ export function BlueprintHome() {
     setBlueprint(null);
     setErrorMessage(null);
     setStatus("loading");
-    setProgressStep(0);
 
     scrollToResults();
 
     try {
-      const [result] = await Promise.all([
-        generateBlueprint(nextIdea),
-        runGenerationProgress(setProgressStep),
-      ]);
+      const result = await generateBlueprint(nextIdea);
 
       setBlueprint(result);
       setStatus("success");
@@ -128,7 +122,6 @@ export function BlueprintHome() {
             idea={idea}
             blueprint={blueprint}
             errorMessage={errorMessage}
-            progressStep={progressStep}
             onTryExample={handleTryExample}
             onRetry={handleRetry}
           />

@@ -49,7 +49,6 @@ type BlueprintDashboardProps = {
   idea?: string;
   blueprint?: Blueprint | null;
   errorMessage?: string | null;
-  progressStep?: number;
   onTryExample?: (idea: string) => void;
   onRetry?: () => void;
 };
@@ -59,7 +58,6 @@ export function BlueprintDashboard({
   idea,
   blueprint,
   errorMessage,
-  progressStep = 0,
   onTryExample,
   onRetry,
 }: BlueprintDashboardProps) {
@@ -70,9 +68,7 @@ export function BlueprintDashboard({
       {status === "empty" ? (
         <DashboardEmptyState onTryExample={onTryExample} />
       ) : null}
-      {status === "loading" ? (
-        <GenerationProgress activeStep={progressStep} />
-      ) : null}
+      {status === "loading" ? <GenerationProgress /> : null}
       {status === "error" ? (
         <DashboardErrorState message={errorMessage} onRetry={onRetry} />
       ) : null}

@@ -135,13 +135,11 @@ export const mockBlueprint: Blueprint = {
   ],
   apiEndpoints: [
     { method: "POST", path: "/api/teams", description: "Create a new team", authRequired: true },
-    { method: "POST", path: "/api/teams/:teamId/invites", description: "Invite a member by email", authRequired: true },
     { method: "GET", path: "/api/teams/:teamId/lists", description: "List all task lists for a team", authRequired: true },
     { method: "POST", path: "/api/teams/:teamId/lists", description: "Create a task list", authRequired: true },
     { method: "GET", path: "/api/lists/:listId/tasks", description: "List all tasks in a list", authRequired: true },
     { method: "POST", path: "/api/lists/:listId/tasks", description: "Create a task in a list", authRequired: true },
     { method: "PATCH", path: "/api/tasks/:taskId", description: "Update a task's status, assignee, or due date", authRequired: true },
-    { method: "DELETE", path: "/api/tasks/:taskId", description: "Delete a task", authRequired: true },
   ],
   authentication: {
     approach: "Email magic link + session cookies via NextAuth.js",

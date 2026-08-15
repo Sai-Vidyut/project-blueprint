@@ -5,12 +5,3 @@ export const EXAMPLE_IDEAS = [
   "CRM for Freelancers",
   "Inventory System for Restaurants",
 ] as const;
-
-export const GENERATION_STEPS = [
-  "Understanding requirements",
-  "Selecting architecture",
-  "Choosing technologies",
-  "Designing system structure",
-  "Creating roadmap",
-  "Generating diagram",
-] as const;

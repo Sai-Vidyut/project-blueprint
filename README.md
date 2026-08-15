@@ -99,7 +99,7 @@ interface Blueprint {
     theme: string;
     goals: string[];
     tasks: Array<{ task: string; deliverable: string }>;
-  }>; // 4–8 weeks
+  }>; // exactly 4 weeks
 }
 ```
 
@@ -125,7 +125,7 @@ Create `.env.local` (gitignored). Do not commit secrets:
 | --- | --- | --- |
 | `AI_API_KEY` | Yes | Server-only key for the model provider |
 | `AI_BASE_URL` | No | Override API base (defaults to OpenRouter; also works with Azure OpenAI, a proxy, etc.) |
-| `AI_MODEL` | Yes | Model id used for blueprint generation |
+| `AI_MODEL` | No | Model id (defaults to `google/gemma-4-31b-it:free`) |
 
 Never expose `AI_API_KEY` to the browser. All model calls go through `/api/blueprint`.
 
@@ -150,7 +150,7 @@ npm run build
 
 **Live:** [https://project-blueprint-eight.vercel.app](https://project-blueprint-eight.vercel.app)
 
-Deploy the Next.js app to Vercel (or any Node host that supports Next.js). Set `AI_API_KEY`, `AI_MODEL`, and optionally `AI_BASE_URL` in the host dashboard. There is no database to provision.
+Deploy the Next.js app to Vercel (or any Node host that supports Next.js). Set `AI_API_KEY`, and optionally `AI_MODEL` and `AI_BASE_URL`, in the host dashboard. There is no database to provision.
 
 ## Documentation
 

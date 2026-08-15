@@ -146,22 +146,22 @@ export const roadmapWeekSchema = z.object({
   tasks: z.array(roadmapTaskSchema).min(3).max(5),
 });
 
-export const roadmapSchema = z.array(roadmapWeekSchema).min(4).max(8);
+export const roadmapSchema = z.array(roadmapWeekSchema).length(4);
 
 export const blueprintSchema = z.object({
   projectSummary: projectSummarySchema,
-  targetUsers: z.array(targetUserSchema).min(1),
-  keyFeatures: z.array(keyFeatureSchema).min(3),
+  targetUsers: z.array(targetUserSchema).min(1).max(2),
+  keyFeatures: z.array(keyFeatureSchema).min(3).max(5),
   mvpScope: mvpScopeSchema,
   architecture: architectureSchema,
   techStack: techStackSchema,
-  databaseSchema: z.array(databaseTableSchema).min(1),
-  apiEndpoints: z.array(apiEndpointSchema).min(3),
+  databaseSchema: z.array(databaseTableSchema).min(1).max(4),
+  apiEndpoints: z.array(apiEndpointSchema).min(3).max(6),
   authentication: authenticationStrategySchema,
   deployment: deploymentArchitectureSchema,
   estimatedComplexity: estimatedComplexitySchema,
-  risks: z.array(riskSchema).min(2),
-  futureEnhancements: z.array(z.string().min(1)).min(2),
+  risks: z.array(riskSchema).min(2).max(3),
+  futureEnhancements: z.array(z.string().min(1)).min(2).max(3),
   roadmap: roadmapSchema,
 });
 
