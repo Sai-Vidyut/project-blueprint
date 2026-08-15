@@ -18,11 +18,11 @@
 
 ## D3 — Provider-agnostic AI module, interface before implementation
 
-**Choice:** `src/lib/ai/types.ts` defines the `AIProvider` interface and config/error types; `src/lib/ai/provider.ts` exposes a factory. Prompts live in `src/prompts`. No vendor (OpenRouter, OpenAI, etc.) is integrated yet — the factory's implementation throws until a provider is built.
+**Choice:** `src/lib/ai/types.ts` defines the `AIProvider` interface. `src/lib/ai/provider.ts` is a factory. Gemini (`@google/genai` Interactions API, `ai.interactions.create`) is the default. OpenRouter stays behind `AI_PROVIDER=openrouter`. Prompts live in `src/prompts`. Env (`GEMINI_API_KEY`, `GEMINI_MODEL`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`) is confined to the implementations.
 
-**Tradeoff:** An extra file for something with no implementation yet. Lets the route handler and any UI work be written against a stable interface now, and a real provider swapped in later behind the same contract, with env (`AI_API_KEY`, `AI_BASE_URL`, `AI_MODEL`) confined to the implementation.
+**Tradeoff:** Two implementations to maintain. The factory keeps the route handler vendor-agnostic, and Gemini's JSON mime type removes the need for a free-model fallback chain.
 
-**Rejected:** Embedding a vendor SDK directly in route handlers before the UI exists. Scattering prompt strings across components.
+**Rejected:** Embedding a vendor SDK directly in route handlers. Scattering prompt strings across components. Defaulting to OpenRouter free models with a retry chain.
 
 ## D4 — Zod schema is the source of truth; types are inferred
 

@@ -24,7 +24,7 @@ flowchart LR
 | Idea form | `src/components/` | Capture a short product idea; enforce length limits |
 | Blueprint view | `src/components/` | Render architecture, tech, diagram, roadmap; loading/error/empty states |
 | Route handler | `src/app/api/blueprint/route.ts` | Validate input, call the AI provider, return typed JSON |
-| AI abstraction | `src/lib/ai/types.ts`, `src/lib/ai/provider.ts` | `AIProvider` interface + factory; no vendor integration yet |
+| AI abstraction | `src/lib/ai/` | `AIProvider` interface, factory, Gemini default, OpenRouter flag |
 | Schemas | `src/lib/schemas/blueprint.ts`, `idea.ts` | Zod schemas — source of truth for the `Blueprint` type and request validation |
 | Types | `src/types/blueprint.ts` | Re-exports the `Blueprint` type inferred from the schema |
 | Prompts | `src/prompts/` | System prompt that instructs the model to return the `Blueprint` JSON shape |
@@ -39,7 +39,9 @@ src/
 ├── lib/
 │   ├── ai/
 │   │   ├── types.ts      # AIProvider interface, config, error types
-│   │   └── provider.ts   # Provider factory (not yet implemented)
+│   │   ├── config.ts     # Env: AI_PROVIDER, GEMINI_*, OPENROUTER_*
+│   │   ├── provider.ts   # Factory (Gemini default)
+│   │   └── providers/    # gemini.ts, openrouter.ts
 │   ├── schemas/
 │   │   ├── blueprint.ts  # Zod schema — Blueprint source of truth, types inferred via z.infer
 │   │   └── idea.ts       # Request validation for POST /api/blueprint
@@ -84,14 +86,14 @@ interface Blueprint {
 
 ## Integrations
 
-- **Model provider** over HTTPS (OpenAI-compatible), reached only through the `AIProvider` interface — no vendor SDK is wired in yet. API key stays on the server.
-- **Mermaid** in the browser only. The model returns Mermaid text, not an image.
+- **Model provider** through the `AIProvider` interface. Default is Gemini (`@google/genai` Interactions API, `GEMINI_API_KEY`). OpenRouter remains behind `AI_PROVIDER=openrouter`. API keys stay on the server.
+- **Mermaid** in the browser only. The model returns structured architecture data, not an image. The client generates Mermaid from that data.
 
 No GitHub, payments, email, or object storage in the MVP.
 
 ## Security
 
-- Secrets only in server env (`AI_API_KEY`).
+- Secrets only in server env (`GEMINI_API_KEY`, `OPENROUTER_API_KEY`).
 - Treat idea text as untrusted: length cap, no eval, sanitize nothing into HTML except via React text nodes; Mermaid render in a constrained component.
 - Do not log full prompts with user ideas in production if they may contain sensitive content.
 - Optional later: coarse in-memory rate limit on the route. Not required to demo.

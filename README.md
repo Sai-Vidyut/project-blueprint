@@ -28,7 +28,7 @@ Describe an idea and receive a structured plan: target users, key features, MVP 
 | Language | TypeScript | Safer contracts for the blueprint JSON |
 | UI | Tailwind CSS 4 | Fast, consistent MVP styling |
 | Diagrams | Mermaid (client render) | Rendered from AI-generated architecture data, not AI-generated syntax |
-| AI | OpenRouter (OpenAI-compatible) via `src/lib/ai` | Swap models/providers via env; abstracted behind `AIProvider` |
+| AI | Gemini (`@google/genai`) via `src/lib/ai` | Default provider; OpenRouter kept behind `AI_PROVIDER` |
 | Validation | Zod (`src/lib/schemas`) | Runtime mirror of the `Blueprint` contract |
 | Data | None | MVP has no project storage |
 
@@ -43,8 +43,10 @@ src/
 ├── lib/
 │   ├── ai/
 │   │   ├── types.ts               # AIProvider interface, config, error types
-│   │   ├── config.ts              # Reads AI_API_KEY / AI_MODEL / AI_BASE_URL
-│   │   ├── provider.ts            # OpenRouter-backed AIProvider implementation
+│   │   ├── config.ts              # Reads AI_PROVIDER / GEMINI_* / OPENROUTER_*
+│   │   ├── provider.ts            # Factory: Gemini default, OpenRouter optional
+│   │   ├── providers/gemini.ts    # @google/genai implementation
+│   │   ├── providers/openrouter.ts
 │   │   └── parse-json-content.ts  # Tolerant JSON extraction from model output
 │   ├── schemas/
 │   │   ├── blueprint.ts      # Zod schema — Blueprint source of truth
@@ -109,7 +111,7 @@ Realistic fixture data matching this exact shape lives in [`src/lib/utils/mockBl
 
 ## AI integration
 
-`src/lib/ai/types.ts` defines the `AIProvider` interface (`generateBlueprint(input): Promise<Blueprint>`). `src/lib/ai/provider.ts` implements it against any OpenAI-compatible chat completions API (OpenRouter by default), and `src/lib/ai/config.ts` reads the model config from environment variables. `POST /api/blueprint` validates the request, calls the provider, and validates the response against `blueprintSchema` before returning it — the model's JSON is never trusted as-is.
+`src/lib/ai/types.ts` defines the `AIProvider` interface (`generateBlueprint(input): Promise<Blueprint>`). `src/lib/ai/provider.ts` is a factory: Gemini (`src/lib/ai/providers/gemini.ts`) is the default; OpenRouter stays available when `AI_PROVIDER=openrouter`. `src/lib/ai/config.ts` reads the model config from environment variables. `POST /api/blueprint` validates the request, calls the provider, and validates the response against `blueprintSchema` before returning it — the model's JSON is never trusted as-is.
 
 ## Installation
 
@@ -123,11 +125,30 @@ Create `.env.local` (gitignored). Do not commit secrets:
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `AI_API_KEY` | Yes | Server-only key for the model provider |
-| `AI_BASE_URL` | No | Override API base (defaults to OpenRouter; also works with Azure OpenAI, a proxy, etc.) |
-| `AI_MODEL` | No | Model id (defaults to `google/gemma-4-31b-it:free`) |
+| `AI_PROVIDER` | No | `gemini` (default) or `openrouter` |
+| `GEMINI_API_KEY` | Yes when `AI_PROVIDER=gemini` | Server-only Gemini API key |
+| `GEMINI_MODEL` | No | Preferred Gemini model (defaults to `gemini-3.6-flash`, the current Interactions API get-started model) |
+| `OPENROUTER_API_KEY` | Yes when `AI_PROVIDER=openrouter` | Server-only OpenRouter key |
+| `OPENROUTER_MODEL` | No | OpenRouter model id |
+| `AI_BASE_URL` | No | OpenRouter API base override |
 
-Never expose `AI_API_KEY` to the browser. All model calls go through `/api/blueprint`.
+Gemini (default):
+
+```bash
+AI_PROVIDER=gemini
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.6-flash
+```
+
+OpenRouter:
+
+```bash
+AI_PROVIDER=openrouter
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=
+```
+
+Never expose `GEMINI_API_KEY` or `OPENROUTER_API_KEY` to the browser. All model calls go through `/api/blueprint`.
 
 ## Development
 
@@ -150,7 +171,7 @@ npm run build
 
 **Live:** [https://project-blueprint-eight.vercel.app](https://project-blueprint-eight.vercel.app)
 
-Deploy the Next.js app to Vercel (or any Node host that supports Next.js). Set `AI_API_KEY`, and optionally `AI_MODEL` and `AI_BASE_URL`, in the host dashboard. There is no database to provision.
+Deploy the Next.js app to Vercel (or any Node host that supports Next.js). Set `GEMINI_API_KEY` and optionally `AI_PROVIDER=gemini` and `GEMINI_MODEL=gemini-3.6-flash`. For OpenRouter, set `AI_PROVIDER=openrouter` and `OPENROUTER_API_KEY`. There is no database to provision.
 
 ## Documentation
 

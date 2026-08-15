@@ -1,10 +1,11 @@
 import { AIProviderError } from "@/lib/ai/types";
 
 const JSON_FENCE_PATTERN = /```(?:json)?\s*([\s\S]*?)```/i;
+const BLUEPRINT_OBJECT_PATTERN = /\{\s*"projectSummary"/g;
 
 /**
- * Parse JSON from a model response. Tolerates explanatory text before/after
- * the JSON object and fenced code blocks.
+ * Parse JSON from a model response. Tolerates thinking traces, prose, and
+ * fenced code blocks by extracting the Blueprint object itself.
  */
 export function parseJsonFromModelContent(content: string): unknown {
   const trimmed = content.trim();
@@ -28,12 +29,19 @@ export function parseJsonFromModelContent(content: string): unknown {
 }
 
 function collectJsonCandidates(trimmed: string): string[] {
-  const candidates: string[] = [trimmed];
+  const candidates: string[] = [];
 
   const fencedMatch = trimmed.match(JSON_FENCE_PATTERN);
   if (fencedMatch?.[1]) {
-    candidates.unshift(fencedMatch[1].trim());
+    candidates.push(fencedMatch[1].trim());
   }
+
+  // Prefer the last Blueprint-shaped object — thinking traces often contain
+  // earlier `{` characters or schema examples.
+  const blueprintObjects = extractBlueprintObjects(trimmed);
+  candidates.push(...blueprintObjects.reverse());
+
+  candidates.push(trimmed);
 
   const objectStart = trimmed.indexOf("{");
   const objectEnd = trimmed.lastIndexOf("}");
@@ -42,6 +50,68 @@ function collectJsonCandidates(trimmed: string): string[] {
   }
 
   return [...new Set(candidates.filter(Boolean))];
+}
+
+function extractBlueprintObjects(text: string): string[] {
+  const objects: string[] = [];
+  const pattern = new RegExp(BLUEPRINT_OBJECT_PATTERN.source, "g");
+  let match = pattern.exec(text);
+
+  while (match) {
+    const extracted = extractBalancedObject(text, match.index);
+    if (extracted) {
+      objects.push(extracted);
+    }
+    match = pattern.exec(text);
+  }
+
+  return objects;
+}
+
+/** Walk from `start` and return the balanced `{...}` object, ignoring braces inside strings. */
+function extractBalancedObject(text: string, start: number): string | null {
+  if (text[start] !== "{") {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (char === "\"") {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === "\"") {
+      inString = true;
+      continue;
+    }
+
+    if (char === "{") {
+      depth += 1;
+    } else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(start, index + 1);
+      }
+    }
+  }
+
+  return null;
 }
 
 function logParseFailure(content: string, trimmed: string) {
@@ -64,6 +134,10 @@ function detectJsonIssues(trimmed: string): string[] {
   const closeBraces = countChar(trimmed, "}");
   const openBrackets = countChar(trimmed, "[");
   const closeBrackets = countChar(trimmed, "]");
+
+  if (/Here's a thinking process/i.test(trimmed) || /thinking process/i.test(trimmed)) {
+    reasons.push("thinking trace before JSON");
+  }
 
   if (/```/.test(trimmed)) {
     reasons.push("markdown fences present");

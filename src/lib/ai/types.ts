@@ -9,9 +9,12 @@ export interface GenerateBlueprintInput {
   idea: string;
 }
 
+export type AIProviderKind = "gemini" | "openrouter";
+
 export interface AIProviderConfig {
+  kind: AIProviderKind;
   apiKey: string;
-  /** Override the API base (Azure OpenAI, OpenRouter, a proxy, etc). */
+  /** Override the API base (OpenRouter, a proxy, etc). Unused for Gemini. */
   baseUrl?: string;
   model: string;
 }
