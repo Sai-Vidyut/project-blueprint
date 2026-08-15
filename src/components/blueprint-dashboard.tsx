@@ -1,0 +1,207 @@
+"use client";
+
+import {
+  CheckCircle2Icon,
+  LayersIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
+
+import { ArchitectureCard } from "@/components/architecture-card";
+import { CopyButton } from "@/components/copy-button";
+import { DiagramCard } from "@/components/diagram-card";
+import { ExampleIdeas } from "@/components/example-ideas";
+import { GenerationProgress } from "@/components/generation-progress";
+import { RoadmapCard } from "@/components/roadmap-card";
+import { TechStackCard } from "@/components/tech-stack-card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { formatBlueprintForCopy } from "@/lib/utils/blueprint-format";
+import type { Blueprint } from "@/types/blueprint";
+
+export type BlueprintDashboardStatus =
+  | "empty"
+  | "loading"
+  | "success"
+  | "error";
+
+type BlueprintDashboardProps = {
+  status: BlueprintDashboardStatus;
+  idea?: string;
+  blueprint?: Blueprint | null;
+  errorMessage?: string | null;
+  progressStep?: number;
+  onTryExample?: (idea: string) => void;
+  onRetry?: () => void;
+};
+
+export function BlueprintDashboard({
+  status,
+  idea,
+  blueprint,
+  errorMessage,
+  progressStep = 0,
+  onTryExample,
+  onRetry,
+}: BlueprintDashboardProps) {
+  return (
+    <div className="flex flex-col gap-10 sm:gap-12">
+      <DashboardHeader status={status} idea={idea} blueprint={blueprint} />
+
+      {status === "empty" ? (
+        <DashboardEmptyState onTryExample={onTryExample} />
+      ) : null}
+      {status === "loading" ? (
+        <GenerationProgress activeStep={progressStep} />
+      ) : null}
+      {status === "error" ? (
+        <DashboardErrorState message={errorMessage} onRetry={onRetry} />
+      ) : null}
+      {status === "success" && blueprint ? (
+        <div className="flex flex-col gap-8 sm:gap-10">
+          <DiagramCard diagram={blueprint.diagram} />
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
+            <ArchitectureCard
+              architecture={blueprint.architecture}
+              architectureReasoning={blueprint.architectureReasoning}
+            />
+            <TechStackCard techStack={blueprint.techStack} />
+          </div>
+          <RoadmapCard roadmap={blueprint.roadmap} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function DashboardHeader({
+  status,
+  idea,
+  blueprint,
+}: {
+  status: BlueprintDashboardStatus;
+  idea?: string;
+  blueprint?: Blueprint | null;
+}) {
+  return (
+    <div className="flex flex-col gap-5 sm:gap-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
+          Blueprint
+        </p>
+        {status === "loading" ? (
+          <Badge variant="secondary">In progress</Badge>
+        ) : null}
+        {status === "success" ? (
+          <Badge variant="secondary">
+            <CheckCircle2Icon data-icon="inline-start" />
+            Ready to build
+          </Badge>
+        ) : null}
+        {status === "error" ? (
+          <Badge variant="destructive">
+            <TriangleAlertIcon data-icon="inline-start" />
+            Needs another try
+          </Badge>
+        ) : null}
+      </div>
+      <div className="flex flex-col gap-4">
+        <h2 className="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl lg:text-5xl">
+          {status === "loading"
+            ? "Crafting your blueprint"
+            : status === "success"
+              ? "Your implementation blueprint"
+              : status === "error"
+                ? "Blueprint unavailable"
+                : "Your blueprint lives here"}
+        </h2>
+        {idea && status !== "empty" ? (
+          <p className="max-w-3xl text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg lg:text-xl">
+            {idea}
+          </p>
+        ) : null}
+        {status === "empty" ? (
+          <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Describe your software idea and generate a complete implementation
+            blueprint — architecture, stack, diagram, and roadmap.
+          </p>
+        ) : null}
+        {status === "loading" ? (
+          <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            We&apos;re structuring your idea into something you can ship.
+          </p>
+        ) : null}
+      </div>
+      {status === "success" && blueprint ? (
+        <CopyButton
+          text={formatBlueprintForCopy(blueprint)}
+          label="Copy all"
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function DashboardEmptyState({
+  onTryExample,
+}: {
+  onTryExample?: (idea: string) => void;
+}) {
+  return (
+    <Empty className="min-h-80 border border-dashed bg-muted/10 py-12 sm:min-h-96 sm:py-16">
+      <EmptyHeader className="max-w-xl">
+        <EmptyMedia variant="icon">
+          <LayersIcon />
+        </EmptyMedia>
+        <EmptyTitle className="text-xl sm:text-2xl">
+          Describe your software idea
+        </EmptyTitle>
+        <EmptyDescription className="text-base sm:text-lg">
+          Generate a complete implementation blueprint with architecture,
+          technology, diagram, and a four-week roadmap.
+        </EmptyDescription>
+      </EmptyHeader>
+      {onTryExample ? (
+        <ExampleIdeas
+          onSelect={onTryExample}
+          className="mt-8 w-full max-w-2xl px-6"
+        />
+      ) : null}
+    </Empty>
+  );
+}
+
+function DashboardErrorState({
+  message,
+  onRetry,
+}: {
+  message?: string | null;
+  onRetry?: () => void;
+}) {
+  return (
+    <Empty className="min-h-48 border border-dashed bg-muted/10 py-12 sm:py-16">
+      <EmptyHeader className="max-w-lg">
+        <EmptyMedia variant="icon">
+          <TriangleAlertIcon />
+        </EmptyMedia>
+        <EmptyTitle className="text-xl sm:text-2xl">
+          We couldn&apos;t finish your blueprint
+        </EmptyTitle>
+        <EmptyDescription className="text-base sm:text-lg">
+          {message ?? "Something interrupted generation. Your idea is still here — try again."}
+        </EmptyDescription>
+      </EmptyHeader>
+      {onRetry ? (
+        <Button type="button" variant="outline" onClick={onRetry}>
+          Try again
+        </Button>
+      ) : null}
+    </Empty>
+  );
+}

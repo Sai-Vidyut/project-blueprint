@@ -1,0 +1,54 @@
+---
+description: Project BluePrint mission, core outputs, and MVP scope guardrails
+alwaysApply: true
+---
+
+# Project BluePrint
+
+Transform software ideas into implementation-ready blueprints. Optimize for simplicity, speed, clarity, and demo value. Protect the MVP from scope creep.
+
+## Success metric
+
+The user receives a useful blueprint within 30 seconds.
+
+## Core outputs (only these)
+
+1. Architecture recommendation
+2. Technology recommendation
+3. Architecture diagram
+4. Development roadmap
+
+Do not add extra product surfaces (dashboards, settings, history, export suites) unless they directly serve these four outputs.
+
+```text
+❌ BAD: Add login so users can save blueprints
+✅ GOOD: Generate the four outputs in one fast flow, no account required
+```
+
+## MVP out of scope
+
+Never implement or plan these for the current product:
+
+- Authentication
+- Payments
+- Project storage
+- Collaboration
+- GitHub integration
+- Code generation
+
+If a request needs one of these, defer it. Keep the current flow working without it.
+
+```text
+❌ BAD: "We'll need GitHub + codegen to make this useful"
+✅ GOOD: Recommend stack and architecture; user implements elsewhere
+```
+
+## Decision filter
+
+Before adding a feature, dependency, or screen, ask:
+
+- Does this help produce one of the four outputs faster or more clearly?
+- Can this ship without auth, storage, or accounts?
+- Does this improve the 30-second path from idea to blueprint?
+
+If no, do not build it.
