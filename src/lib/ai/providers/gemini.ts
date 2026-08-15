@@ -79,12 +79,18 @@ async function requestBlueprintFromGemini(args: {
   }
 
   const parsed = parseJsonFromModelContent(content);
+
+  console.log(
+    "[blueprint] Raw AI response:",
+    JSON.stringify(parsed, null, 2),
+  );
+
   const validated = blueprintSchema.safeParse(parsed);
 
   if (!validated.success) {
     console.error(
       "[blueprint] blueprintSchema validation failed:",
-      validated.error.issues,
+      JSON.stringify(validated.error.issues, null, 2),
     );
     throw new AIProviderError("AI provider returned an invalid blueprint shape.");
   }
