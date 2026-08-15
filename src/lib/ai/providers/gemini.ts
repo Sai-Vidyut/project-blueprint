@@ -11,9 +11,6 @@ import {
 
 const MAX_OUTPUT_TOKENS = 4096;
 
-/** Temporary: list models once per process so we can see what this API key can access. */
-let listedModelIds: string[] | undefined;
-
 /**
  * Gemini-backed `AIProvider` using the current Interactions API
  * (`ai.interactions.create`), not the legacy `models.generateContent` path.
@@ -23,43 +20,22 @@ export function createGeminiProvider(config: AIProviderConfig): AIProvider {
 
   return {
     async generateBlueprint(input) {
-      const available = await listAvailableModelIds(client);
-      const models = buildGeminiAttempts(config.model, available);
-      const failures: Array<{ model: string; reason: string }> = [];
-      const userPrompt = buildBlueprintUserPrompt(input.idea);
+      console.log(`[gemini] model = ${config.model}`);
+      console.log(`[gemini] Attempt 1: ${config.model}`);
 
-      for (let index = 0; index < models.length; index += 1) {
-        const model = models[index];
-        console.log(`[gemini] Attempt ${index + 1}: ${model}`);
-
-        try {
-          return await requestBlueprintFromGemini({
-            client,
-            model,
-            userPrompt,
-          });
-        } catch (error) {
-          const reason = toFailureReason(error);
-          failures.push({ model, reason });
-          console.error(`[gemini] Attempt ${index + 1} failed: ${model} — ${reason}`);
-
-          if (!isRetryableModelError(error) || index >= models.length - 1) {
-            if (error instanceof AIProviderError) {
-              throw error;
-            }
-
-            throw new AIProviderError("Failed to reach the AI provider.", error);
-          }
+      try {
+        return await requestBlueprintFromGemini({
+          client,
+          model: config.model,
+          userPrompt: buildBlueprintUserPrompt(input.idea),
+        });
+      } catch (error) {
+        if (error instanceof AIProviderError) {
+          throw error;
         }
+
+        throw new AIProviderError("Failed to reach the AI provider.", error);
       }
-
-      const summary = failures
-        .map((failure) => `${failure.model}: ${failure.reason}`)
-        .join("; ");
-
-      throw new AIProviderError(
-        `Failed to generate blueprint. Attempts: ${summary || "no models attempted"}`,
-      );
     },
   };
 }
@@ -114,67 +90,6 @@ async function requestBlueprintFromGemini(args: {
   }
 
   return validated.data;
-}
-
-async function listAvailableModelIds(client: GoogleGenAI): Promise<string[]> {
-  if (listedModelIds) {
-    return listedModelIds;
-  }
-
-  const ids: string[] = [];
-
-  try {
-    const pager = await client.models.list();
-
-    for await (const model of pager) {
-      if (model.name) {
-        ids.push(toModelId(model.name));
-      }
-    }
-
-    listedModelIds = ids;
-    console.log(
-      `[gemini] available models for this API key (${ids.length}): ${ids.join(", ") || "(none)"}`,
-    );
-  } catch (error) {
-    listedModelIds = [];
-    console.error("[gemini] failed to list models:", toFailureReason(error));
-  }
-
-  return listedModelIds;
-}
-
-function buildGeminiAttempts(preferred: string, available: string[]): string[] {
-  const attempts: string[] = [];
-  const seen = new Set<string>();
-
-  const candidates = [
-    preferred,
-    ...available.filter((id) => isTextGeminiModel(id)),
-  ];
-
-  for (const model of candidates) {
-    if (!model || seen.has(model)) {
-      continue;
-    }
-
-    seen.add(model);
-    attempts.push(model);
-  }
-
-  return attempts;
-}
-
-function toModelId(name: string): string {
-  return name.replace(/^models\//, "");
-}
-
-function isTextGeminiModel(id: string): boolean {
-  if (!id.startsWith("gemini-")) {
-    return false;
-  }
-
-  return !/image|audio|tts|live|robotics|lyria|embedding|imagen/i.test(id);
 }
 
 function isRetryableModelError(error: unknown): boolean {

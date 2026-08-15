@@ -37,7 +37,6 @@ export function getAIProviderConfig(): AIProviderConfig {
     throw new AIProviderError("AI provider is not configured.");
   }
 
-  console.log(`[gemini] model = ${model}`);
   return { kind, apiKey, model };
 }
 
