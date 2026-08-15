@@ -10,6 +10,8 @@ import {
 import { ideaRequestSchema } from "@/lib/schemas/idea";
 
 export async function POST(request: Request) {
+  console.log("[blueprint] POST /api/blueprint request started");
+
   let body: unknown;
 
   try {
@@ -30,7 +32,10 @@ export async function POST(request: Request) {
     );
   }
 
+  console.log("[blueprint] Request validation succeeded");
+
   try {
+    console.log("[blueprint] createAIProvider() called");
     const provider = createAIProvider(getAIProviderConfig());
     const blueprint = await provider.generateBlueprint({
       idea: parsedRequest.data.idea,
@@ -44,6 +49,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(parsedResponse.data);
   } catch (error) {
+    console.error("[blueprint] Caught error during blueprint generation:", error);
+
     if (error instanceof AIProviderError) {
       return jsonError(
         "Failed to generate blueprint. Please try again.",

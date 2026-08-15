@@ -31,6 +31,9 @@ export function createAIProvider(config: AIProviderConfig): AIProvider {
     async generateBlueprint(input) {
       const url = `${config.baseUrl?.replace(/\/$/, "") ?? "https://openrouter.ai/api/v1"}/chat/completions`;
 
+      console.log("[blueprint] OpenRouter model:", config.model);
+      console.log("[blueprint] OpenRouter URL:", url);
+
       let response: Response;
 
       try {
@@ -58,17 +61,23 @@ export function createAIProvider(config: AIProviderConfig): AIProvider {
         throw new AIProviderError("Failed to reach the AI provider.", error);
       }
 
+      console.log("[blueprint] OpenRouter response status:", response.status);
+      console.log("[blueprint] OpenRouter response statusText:", response.statusText);
+
+      const rawBody = await response.text();
+      console.log("[blueprint] OpenRouter raw response body:", rawBody);
+
       let payload: ChatCompletionResponse;
 
       try {
-        payload = (await response.json()) as ChatCompletionResponse;
+        payload = JSON.parse(rawBody) as ChatCompletionResponse;
       } catch (error) {
         throw new AIProviderError("AI provider returned an unreadable response.", error);
       }
 
       if (!response.ok) {
         throw new AIProviderError(
-          payload.error?.message ?? "AI provider rejected the request.",
+          `AI provider rejected the request (${response.status} ${response.statusText}): ${rawBody}`,
         );
       }
 
@@ -82,6 +91,10 @@ export function createAIProvider(config: AIProviderConfig): AIProvider {
       const validated = blueprintSchema.safeParse(parsed);
 
       if (!validated.success) {
+        console.error(
+          "[blueprint] blueprintSchema validation failed:",
+          validated.error.issues,
+        );
         throw new AIProviderError("AI provider returned an invalid blueprint shape.");
       }
 
