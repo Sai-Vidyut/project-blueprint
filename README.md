@@ -105,7 +105,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 1. Enter a software idea (at least 10 characters).
 2. Click **Generate Blueprint**. The UI calls `POST /api/blueprint`, which returns `mockBlueprint` until AI is wired in.
-3. Confirm the four sections render: architecture, technology, diagram placeholder (Mermaid source), and roadmap.
+3. Confirm the four sections render: architecture, technology, diagram, and roadmap.
 
 ```bash
 npm run lint
@@ -114,7 +114,9 @@ npm run build
 
 ## Deployment
 
-Deploy the Next.js app to Vercel (or any Node host that supports Next.js). Set the environment variables in the host dashboard. There is no database to provision.
+**Live:** [https://project-blueprint-eight.vercel.app](https://project-blueprint-eight.vercel.app)
+
+Deploy the Next.js app to Vercel (or any Node host that supports Next.js). Set the environment variables in the host dashboard when AI is wired in. There is no database to provision.
 
 ## Documentation
 

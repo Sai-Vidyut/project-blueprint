@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 
+import { getAIProviderConfig } from "@/lib/ai/config";
+import { createAIProvider } from "@/lib/ai/provider";
+import { AIProviderError } from "@/lib/ai/types";
 import {
   blueprintApiErrorSchema,
   generateBlueprintResponseSchema,
 } from "@/lib/schemas/generate-blueprint";
 import { ideaRequestSchema } from "@/lib/schemas/idea";
-import { mockBlueprint } from "@/lib/utils/mockBlueprint";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -28,13 +30,29 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsedResponse = generateBlueprintResponseSchema.safeParse(mockBlueprint);
+  try {
+    const provider = createAIProvider(getAIProviderConfig());
+    const blueprint = await provider.generateBlueprint({
+      idea: parsedRequest.data.idea,
+    });
 
-  if (!parsedResponse.success) {
-    return jsonError("Blueprint fixture is invalid.", 500);
+    const parsedResponse = generateBlueprintResponseSchema.safeParse(blueprint);
+
+    if (!parsedResponse.success) {
+      return jsonError("Generated blueprint failed validation.", 500);
+    }
+
+    return NextResponse.json(parsedResponse.data);
+  } catch (error) {
+    if (error instanceof AIProviderError) {
+      return jsonError(
+        "Failed to generate blueprint. Please try again.",
+        502,
+      );
+    }
+
+    return jsonError("Something went wrong.", 500);
   }
-
-  return NextResponse.json(parsedResponse.data);
 }
 
 export function GET() {
