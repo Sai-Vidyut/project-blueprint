@@ -7,7 +7,8 @@ export function isDevForceFailure(
     | "FORCE_GEMINI_FAILURE"
     | "FORCE_CEREBRAS_FAILURE"
     | "FORCE_GROQ_FAILURE"
-    | "FORCE_HF_FAILURE",
+    | "FORCE_HF_FAILURE"
+    | "FORCE_OPENROUTER_FAILURE",
 ): boolean {
   return process.env.NODE_ENV === "development" && process.env[flag] === "true";
 }

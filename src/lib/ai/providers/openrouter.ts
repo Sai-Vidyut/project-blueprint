@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { isDevForceFailure } from "@/lib/ai/dev-force-failure";
 import { resolveOpenRouterAttempts } from "@/lib/ai/openrouter-catalog";
 import {
   isKnownGoodModel,
@@ -57,6 +58,17 @@ export function createOpenRouterProvider(config: AIProviderConfig): AIProvider {
 
   return {
     async generateBlueprint(input) {
+      if (isDevForceFailure("FORCE_OPENROUTER_FAILURE")) {
+        console.log("[openrouter] Forced failure for fallback testing");
+        throw new AIProviderError(
+          "Forced OpenRouter failure for fallback testing.",
+          undefined,
+          "unavailable",
+          undefined,
+          "openrouter",
+        );
+      }
+
       const userPrompt = buildBlueprintUserPrompt(input.idea);
       const attempts = (
         await resolveOpenRouterAttempts({

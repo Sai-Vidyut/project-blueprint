@@ -1,8 +1,18 @@
+import { AI_SERVICE_UNAVAILABLE } from "@/lib/ai/types";
 import {
   blueprintApiErrorSchema,
   generateBlueprintResponseSchema,
 } from "@/lib/schemas/generate-blueprint";
 import type { Blueprint } from "@/types/blueprint";
+
+export class AiServiceUnavailableError extends Error {
+  readonly code = AI_SERVICE_UNAVAILABLE;
+
+  constructor() {
+    super("AI service unavailable.");
+    this.name = "AiServiceUnavailableError";
+  }
+}
 
 export async function generateBlueprint(idea: string): Promise<Blueprint> {
   const response = await fetch("/api/blueprint", {
@@ -17,6 +27,12 @@ export async function generateBlueprint(idea: string): Promise<Blueprint> {
 
   if (!response.ok) {
     const parsedError = blueprintApiErrorSchema.safeParse(data);
+    const code = parsedError.success ? parsedError.data.error : undefined;
+
+    if (response.status === 503 && code === AI_SERVICE_UNAVAILABLE) {
+      throw new AiServiceUnavailableError();
+    }
+
     const message = parsedError.success
       ? parsedError.data.error
       : "Failed to generate blueprint.";

@@ -22,7 +22,7 @@ flowchart LR
 | Component | Path | Responsibility |
 | --- | --- | --- |
 | Idea form | `src/components/` | Capture a short product idea; enforce length limits |
-| Blueprint view | `src/components/` | Render architecture, tech, diagram, roadmap; loading/error/empty states |
+| Blueprint view | `src/components/` | Render architecture, tech, diagram, roadmap; loading/error/empty/outage states |
 | Route handler | `src/app/api/blueprint/route.ts` | Validate input, call the AI provider, return typed JSON |
 | AI abstraction | `src/lib/ai/` | `AIProvider` interface, factory, Gemini primary, Cerebras → Groq → Hugging Face → OpenRouter failover |
 | Schemas | `src/lib/schemas/blueprint.ts`, `idea.ts` | Zod schemas — source of truth for the `Blueprint` type and request validation |
@@ -84,7 +84,8 @@ interface Blueprint {
 ```
 
 5. Client renders `architecture`, `architectureReasoning`, `techStack`, and `roadmap` as text/lists, and passes `diagram` to a client-only Mermaid renderer.
-6. Refresh or close tab discards the result (no storage).
+6. If every configured provider fails for a transient/availability reason (rate limit, timeout, network, 5xx, or optional-provider 402), `POST /api/blueprint` returns **HTTP 503** with `{ "error": "AI_SERVICE_UNAVAILABLE" }`. The UI shows a dedicated outage state. Invalid JSON, schema validation, and config errors keep the existing error path.
+7. Refresh or close tab discards the result (no storage).
 
 ## Integrations
 

@@ -57,7 +57,11 @@ export type AIProviderErrorKind =
   | "empty_response"
   | "payment_required"
   | "config"
+  | "service_unavailable"
   | "unknown";
+
+/** Machine-readable API code when every usable provider is down. */
+export const AI_SERVICE_UNAVAILABLE = "AI_SERVICE_UNAVAILABLE";
 
 const FALLBACK_ELIGIBLE_KINDS: ReadonlySet<AIProviderErrorKind> = new Set([
   "rate_limited",
@@ -75,6 +79,7 @@ export class AIProviderError extends Error {
     readonly kind: AIProviderErrorKind = "unknown",
     readonly statusCode?: number,
     readonly provider?: AIProviderKind,
+    readonly attemptedProviders: readonly AIProviderKind[] = [],
   ) {
     super(message);
     this.name = "AIProviderError";
@@ -98,8 +103,8 @@ export function isFallbackEligible(error: unknown): boolean {
 /**
  * Account billing, quota, or payment restriction (typically HTTP 402).
  * This is a provider-account condition, not a model-quality or model-health
- * failure. Optional providers should be skipped; the last provider should
- * surface the error.
+ * failure. Optional providers should be skipped. If every remaining
+ * provider is an access failure, the chain reports service unavailable.
  */
 export function isOptionalProviderAccessFailure(error: unknown): boolean {
   return (
@@ -114,7 +119,8 @@ export function isOptionalProviderAccessFailure(error: unknown): boolean {
  * - Transient infra failures → continue when another provider remains
  * - Payment/account access → skip this optional provider when another remains
  * - Invalid JSON / invalid shape / bad request / config → stop
- * - Any of the above on the last provider → stop (surface that error)
+ * - Last provider + availability/access failure → service_unavailable
+ * - Last provider + validation/config → surface that error
  */
 export function shouldContinueToNextProvider(
   error: unknown,
@@ -125,4 +131,19 @@ export function shouldContinueToNextProvider(
   }
 
   return isFallbackEligible(error) || isOptionalProviderAccessFailure(error);
+}
+
+/**
+ * Failures that mean a provider could not serve the request, so the chain
+ * may continue. When every configured provider fails this way, the AI
+ * service is unavailable — not an application/validation error.
+ */
+export function isProviderAvailabilityFailure(error: unknown): boolean {
+  return isFallbackEligible(error) || isOptionalProviderAccessFailure(error);
+}
+
+export function isAiServiceUnavailable(error: unknown): boolean {
+  return (
+    error instanceof AIProviderError && error.kind === "service_unavailable"
+  );
 }

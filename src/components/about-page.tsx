@@ -23,15 +23,15 @@ const SOCIAL_ICONS = {
 
 export function AboutPage() {
   return (
-    <div className="relative flex min-h-full flex-1 flex-col">
+    <div className="relative flex min-h-0 flex-1 flex-col">
       <AppBackdrop />
       <SiteHeader showGetStarted />
 
-      <main className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-16 lg:py-20">
+      <main className="relative mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-16 md:py-20">
         <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
           About the developer
         </p>
-        <h1 className="mt-3 font-heading text-4xl font-medium tracking-tight text-balance sm:text-5xl">
+        <h1 className="mt-3 w-full font-heading text-4xl font-medium tracking-tight text-pretty sm:text-5xl">
           {DEVELOPER_NAME}
         </h1>
         <div className="mt-5 flex max-w-2xl flex-col gap-4 text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg">

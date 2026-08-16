@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 
 import { getAIProviderConfig } from "@/lib/ai/config";
 import { createAIProvider } from "@/lib/ai/provider";
-import { AIProviderError } from "@/lib/ai/types";
+import {
+  AI_SERVICE_UNAVAILABLE,
+  AIProviderError,
+  isAiServiceUnavailable,
+} from "@/lib/ai/types";
 import {
   blueprintApiErrorSchema,
   generateBlueprintResponseSchema,
@@ -50,6 +54,10 @@ export async function POST(request: Request) {
     return NextResponse.json(parsedResponse.data);
   } catch (error) {
     console.error("[blueprint] Caught error during blueprint generation:", error);
+
+    if (isAiServiceUnavailable(error)) {
+      return jsonError(AI_SERVICE_UNAVAILABLE, 503);
+    }
 
     if (error instanceof AIProviderError) {
       return jsonError(

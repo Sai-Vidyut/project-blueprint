@@ -91,7 +91,7 @@ export function IdeaForm({
                 rows={6}
                 placeholder="Describe your software idea and we'll map architecture, stack, diagram, and roadmap."
                 autoComplete="off"
-                className="min-h-36 text-base sm:text-lg"
+                className="field-sizing-fixed min-h-36 text-base sm:text-lg"
               />
               <FieldError errors={issues} />
             </Field>

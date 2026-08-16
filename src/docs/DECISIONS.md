@@ -24,6 +24,14 @@
 
 **Rejected:** Embedding a vendor SDK directly in route handlers. Requiring every API key. Auto-selecting paid OpenRouter models. Looping the entire free catalog. Falling back on invalid JSON / Zod failures. Treating HTTP 402 as a model-health cooldown.
 
+## D10 — Dedicated AI outage state when every provider is unavailable
+
+**Choice:** When the failover chain exhausts every configured provider for transient/availability reasons (including optional-provider HTTP 402), throw `AIProviderError` with kind `service_unavailable`. `POST /api/blueprint` maps that to HTTP **503** and `{ "error": "AI_SERVICE_UNAVAILABLE" }`. The create page shows a humorous outage state with Try Again. Invalid JSON, schema failures, bad requests, and config errors stay on the existing 502/error path.
+
+**Tradeoff:** One extra error kind and UI state. Avoids a static maintenance flag and does not poll providers.
+
+**Rejected:** HTTP 404 for the API. A hardcoded `isDown` / maintenance toggle. Treating validation failures as an outage. Replacing Next.js’s real 404 page.
+
 ## D4 — Zod schema is the source of truth; types are inferred
 
 **Choice:** `src/lib/schemas/blueprint.ts` defines the Zod schema. `Blueprint`, `TechStack`, and `Roadmap` types are produced with `z.infer`, not hand-declared. `src/types/blueprint.ts` re-exports these types for consumers that only need the shape.

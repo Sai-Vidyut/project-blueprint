@@ -220,7 +220,7 @@ function DashboardHeader({
         ) : null}
       </div>
       <div className="flex flex-col gap-4">
-        <h2 className="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl lg:text-5xl">
+        <h2 className="w-full font-heading text-3xl font-medium tracking-tight text-pretty sm:text-4xl md:text-5xl">
           {isGeneratingView
             ? "Crafting your blueprint"
             : status === "success"
@@ -230,7 +230,7 @@ function DashboardHeader({
                 : "Your blueprint lives here"}
         </h2>
         {idea && status !== "empty" ? (
-          <p className="max-w-3xl text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg lg:text-xl">
+          <p className="max-w-3xl text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg md:text-xl">
             {idea}
           </p>
         ) : null}
@@ -271,7 +271,7 @@ function DashboardEmptyState({
   onTryExample?: (idea: string) => void;
 }) {
   return (
-    <Empty className="glass-surface min-h-80 border border-white/12 py-12 sm:min-h-96 sm:py-16">
+    <Empty className="glass-surface min-h-80 grow-0 border border-white/12 py-12 sm:min-h-96 sm:py-16">
       <EmptyHeader className="max-w-xl">
         <EmptyMedia variant="icon">
           <LayersIcon />
@@ -305,7 +305,7 @@ function DashboardErrorState({
   onRetry?: () => void;
 }) {
   return (
-    <Empty className="glass-surface min-h-48 border border-white/12 py-12 sm:py-16">
+    <Empty className="glass-surface min-h-48 grow-0 border border-white/12 py-12 sm:py-16">
       <EmptyHeader className="max-w-lg">
         <EmptyMedia variant="icon">
           <TriangleAlertIcon />

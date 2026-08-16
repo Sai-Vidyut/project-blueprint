@@ -18,7 +18,7 @@ type SiteHeaderProps = {
 
 export function SiteHeader({ showGetStarted = false }: SiteHeaderProps) {
   return (
-    <header className="glass-surface sticky top-0 z-10 border-b border-white/10">
+    <header className="glass-header sticky top-0 z-10 shrink-0 border-b border-white/10">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href="/"

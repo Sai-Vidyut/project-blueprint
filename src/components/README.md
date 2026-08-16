@@ -6,6 +6,7 @@ UI building blocks for the single-page blueprint flow. Keep these presentational
 | --- | --- |
 | `landing-page.tsx` | Product landing: hero, how it works, about |
 | `blueprint-home.tsx` | Client orchestrator on `/create`: idea submit → `POST /api/blueprint` |
+| `ai-outage-state.tsx` | Dedicated UI when every AI provider is unavailable |
 | `site-header.tsx` | Sticky wordmark header (links home; optional Get Started) |
 | `blueprint-dashboard.tsx` | Results dashboard: empty, generation progress, success, error |
 | `blueprint-generation-progress.tsx` | Motion progress bar, rotating stages, skeleton cards |

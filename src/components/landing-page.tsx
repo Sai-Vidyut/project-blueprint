@@ -47,11 +47,11 @@ const STEPS = [
 
 export function LandingPage() {
   return (
-    <div className="relative flex min-h-full flex-1 flex-col">
+    <div className="relative flex min-h-0 flex-1 flex-col">
       <AppBackdrop />
       <SiteHeader showGetStarted />
 
-      <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-16 lg:py-20">
+      <main className="relative mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-10 sm:px-6 sm:py-16 md:py-20">
         <section className="mx-auto flex w-full max-w-3xl flex-col items-center gap-8 text-center">
           <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
             BluePrint
@@ -62,11 +62,11 @@ export function LandingPage() {
             easing="smooth"
             delay={1400}
             pauseBetween={2800}
-            className="font-heading text-center text-[2.25rem] leading-[1.06] font-medium tracking-tight text-balance sm:text-5xl lg:text-6xl"
+            className="w-full font-heading text-center text-[2.25rem] leading-[1.06] font-medium tracking-tight text-pretty sm:text-5xl md:text-6xl"
           >
             Turn an app idea into a build-ready plan.
           </GradientShimmer>
-          <p className="mx-auto max-w-xl text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg">
+          <p className="mx-auto w-full max-w-xl text-base leading-relaxed text-pretty text-muted-foreground sm:text-lg">
             Describe the product. BluePrint returns a structured development
             blueprint covering the pieces you actually need to start building.
           </p>
@@ -103,7 +103,7 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section className="mx-auto mt-20 grid w-full max-w-5xl gap-6 sm:mt-28 lg:grid-cols-2 lg:gap-8">
+        <section className="mx-auto mt-20 grid w-full max-w-5xl gap-6 sm:mt-28 md:grid-cols-2 md:gap-8">
           <Card className="[--card-spacing:--spacing(6)] sm:[--card-spacing:--spacing(8)]">
             <CardHeader>
               <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">

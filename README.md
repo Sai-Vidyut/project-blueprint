@@ -173,7 +173,9 @@ When `AI_PROVIDER` is `gemini` (the default), every request tries Gemini first. 
 3. Hugging Face Inference Providers (`HF_TOKEN`)
 4. OpenRouter (`OPENROUTER_API_KEY`) — dynamic free catalog, health registry, max 3 models
 
-A successful provider stops the chain. Missing keys skip that step without breaking Gemini. HTTP 402 / payment-quota on an optional provider skips to the next configured fallback (it is not a model-health failure). Failover does **not** trigger for malformed JSON, a `blueprintSchema` validation failure, or a bad request. If the last provider returns 402, that error is returned.
+A successful provider stops the chain. Missing keys skip that step without breaking Gemini. HTTP 402 / payment-quota on an optional provider skips to the next configured fallback (it is not a model-health failure). Failover does **not** trigger for malformed JSON, a `blueprintSchema` validation failure, or a bad request.
+
+If **every** configured provider fails for a transient or payment/access reason, `POST /api/blueprint` returns **HTTP 503** with `{ "error": "AI_SERVICE_UNAVAILABLE" }`. The generator shows a dedicated “we’re currently down” state. Try Again retries the same request. Validation and configuration errors do not use this path.
 
 Never expose `GEMINI_API_KEY`, `CEREBRAS_API_KEY`, `GROQ_API_KEY`, `HF_TOKEN`, or `OPENROUTER_API_KEY` to the browser. All model calls go through `/api/blueprint`.
 
@@ -192,9 +194,10 @@ FORCE_GEMINI_FAILURE=true
 FORCE_CEREBRAS_FAILURE=true
 FORCE_GROQ_FAILURE=true
 FORCE_HF_FAILURE=true
+FORCE_OPENROUTER_FAILURE=true
 ```
 
-These flags are ignored in production.
+These flags are ignored in production. Set every `FORCE_*` flag to exercise the 503 outage UI without consuming quota. Leave a later provider unset to confirm fallback still produces a normal blueprint.
 
 1. Open `/` and click **Get Started** (or go to `/create`).
 2. Enter a software idea (at least 10 characters).

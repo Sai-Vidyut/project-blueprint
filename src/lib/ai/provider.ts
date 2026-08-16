@@ -13,14 +13,17 @@ import { createOpenRouterProvider } from "@/lib/ai/providers/openrouter";
 import {
   AIProviderError,
   isOptionalProviderAccessFailure,
+  isProviderAvailabilityFailure,
   shouldContinueToNextProvider,
   type AIProvider,
   type AIProviderConfig,
+  type AIProviderKind,
   type GenerateBlueprintInput,
 } from "@/lib/ai/types";
 import type { Blueprint } from "@/types/blueprint";
 
 type ChainStep = {
+  kind: AIProviderKind;
   label: string;
   provider: AIProvider;
 };
@@ -97,6 +100,7 @@ function buildFailoverChain(primary: AIProviderConfig): ChainStep[] {
       primary.kind !== "cerebras"
     ) {
       steps.push({
+        kind: "cerebras",
         label: "Cerebras",
         provider: createCerebrasProvider(cerebrasFallbackConfig),
       });
@@ -108,6 +112,7 @@ function buildFailoverChain(primary: AIProviderConfig): ChainStep[] {
       primary.kind !== "groq"
     ) {
       steps.push({
+        kind: "groq",
         label: "Groq",
         provider: createGroqProvider(groqFallbackConfig),
       });
@@ -119,6 +124,7 @@ function buildFailoverChain(primary: AIProviderConfig): ChainStep[] {
       primary.kind !== "huggingface"
     ) {
       steps.push({
+        kind: "huggingface",
         label: "Hugging Face",
         provider: createHuggingFaceProvider(huggingFaceFallbackConfig),
       });
@@ -126,6 +132,7 @@ function buildFailoverChain(primary: AIProviderConfig): ChainStep[] {
 
     if (openRouterFallbackConfig && primary.kind !== "openrouter") {
       steps.push({
+        kind: "openrouter",
         label: "OpenRouter",
         provider: createOpenRouterProvider(openRouterFallbackConfig),
       });
@@ -133,11 +140,18 @@ function buildFailoverChain(primary: AIProviderConfig): ChainStep[] {
   };
 
   if (primary.kind === "openrouter") {
-    return [{ label: "OpenRouter", provider: createOpenRouterProvider(primary) }];
+    return [
+      {
+        kind: "openrouter",
+        label: "OpenRouter",
+        provider: createOpenRouterProvider(primary),
+      },
+    ];
   }
 
   if (primary.kind === "huggingface") {
     steps.push({
+      kind: "huggingface",
       label: "Hugging Face",
       provider: createHuggingFaceProvider(primary),
     });
@@ -147,6 +161,7 @@ function buildFailoverChain(primary: AIProviderConfig): ChainStep[] {
 
   if (primary.kind === "groq") {
     steps.push({
+      kind: "groq",
       label: "Groq",
       provider: createGroqProvider(primary),
     });
@@ -156,6 +171,7 @@ function buildFailoverChain(primary: AIProviderConfig): ChainStep[] {
 
   if (primary.kind === "cerebras") {
     steps.push({
+      kind: "cerebras",
       label: "Cerebras",
       provider: createCerebrasProvider(primary),
     });
@@ -163,7 +179,11 @@ function buildFailoverChain(primary: AIProviderConfig): ChainStep[] {
     return steps;
   }
 
-  steps.push({ label: "Gemini", provider: createGeminiProvider(primary) });
+  steps.push({
+    kind: "gemini",
+    label: "Gemini",
+    provider: createGeminiProvider(primary),
+  });
   appendRemainingFallbacks("gemini");
   return steps;
 }
@@ -174,6 +194,7 @@ function createFailoverProvider(primary: AIProviderConfig): AIProvider {
   return {
     async generateBlueprint(input: GenerateBlueprintInput): Promise<Blueprint> {
       let lastError: unknown;
+      const attemptedProviders: AIProviderKind[] = [];
 
       for (const [index, step] of steps.entries()) {
         try {
@@ -181,6 +202,7 @@ function createFailoverProvider(primary: AIProviderConfig): AIProvider {
             console.log(`[provider] Falling back to ${step.label}`);
           }
 
+          attemptedProviders.push(step.kind);
           return await step.provider.generateBlueprint(input);
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);
@@ -193,7 +215,7 @@ function createFailoverProvider(primary: AIProviderConfig): AIProvider {
             const providerTag =
               error instanceof AIProviderError && error.provider
                 ? error.provider
-                : step.label.toLowerCase();
+                : step.kind;
             const status =
               error instanceof AIProviderError ? (error.statusCode ?? 402) : 402;
             console.log(
@@ -211,19 +233,39 @@ function createFailoverProvider(primary: AIProviderConfig): AIProvider {
             continue;
           }
 
+          if (!hasNextProvider && isProviderAvailabilityFailure(error)) {
+            throw createServiceUnavailableError(error, attemptedProviders);
+          }
+
           throw error;
         }
       }
 
-      throw new AIProviderError(
-        "All configured AI providers failed to generate a blueprint.",
-        lastError,
-        lastError instanceof AIProviderError ? lastError.kind : "unknown",
-        lastError instanceof AIProviderError ? lastError.statusCode : undefined,
-        lastError instanceof AIProviderError ? lastError.provider : undefined,
-      );
+      throw createServiceUnavailableError(lastError, attemptedProviders);
     },
   };
+}
+
+function createServiceUnavailableError(
+  lastError: unknown,
+  attemptedProviders: readonly AIProviderKind[],
+): AIProviderError {
+  const root = lastError instanceof AIProviderError ? lastError : undefined;
+
+  console.error(
+    `[provider] All configured AI providers unavailable. Attempted: ${
+      attemptedProviders.length > 0 ? attemptedProviders.join(", ") : "(none)"
+    }`,
+  );
+
+  return new AIProviderError(
+    "All configured AI providers failed to generate a blueprint.",
+    lastError,
+    "service_unavailable",
+    root?.statusCode,
+    root?.provider,
+    attemptedProviders,
+  );
 }
 
 /**

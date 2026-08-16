@@ -1,10 +1,9 @@
 "use client";
 
 import {
-  createElement,
   type CSSProperties,
-  type ElementType,
   type HTMLAttributes,
+  type Ref,
   useEffect,
   useMemo,
   useRef,
@@ -67,8 +66,8 @@ export interface GradientShimmerProps extends Omit<
   pauseWhenOffscreen?: boolean;
   /** Render a static gradient (no sweep) under `prefers-reduced-motion`. Defaults to `true`. */
   respectReducedMotion?: boolean;
-  /** Element to render. Defaults to `"span"`. */
-  as?: ElementType;
+  /** HTML tag to render. Defaults to `"span"`. */
+  as?: "span" | "h1";
 }
 
 /* -------------------------------------------------------------------------- */
@@ -401,7 +400,6 @@ export function GradientShimmer({
 
     let anim: Animation | null = null;
     let pauseTimer: ReturnType<typeof setTimeout> | undefined;
-    let startTimer: ReturnType<typeof setTimeout> | undefined;
     let active = true;
     let cancelled = false;
 
@@ -438,7 +436,7 @@ export function GradientShimmer({
       },
     );
 
-    startTimer = setTimeout(runSweep, Math.max(0, delay));
+    const startTimer = setTimeout(runSweep, Math.max(0, delay));
 
     return () => {
       cancelled = true;
@@ -461,7 +459,8 @@ export function GradientShimmer({
 
   const mergedStyle: CSSProperties = {
     position: "relative",
-    display: "inline-block",
+    display: as === "span" ? "inline-block" : "block",
+    width: as === "span" ? undefined : "100%",
     backgroundImage,
     backgroundRepeat: "no-repeat",
     // First paint spans the full text (a static gradient); the effect swaps in
@@ -479,10 +478,28 @@ export function GradientShimmer({
     ...style,
   };
 
-  return createElement(
-    as,
-    { ...restProps, ref, className, style: mergedStyle },
-    children,
+  if (as === "h1") {
+    return (
+      <h1
+        {...restProps}
+        ref={ref as Ref<HTMLHeadingElement>}
+        className={className}
+        style={mergedStyle}
+      >
+        {children}
+      </h1>
+    );
+  }
+
+  return (
+    <span
+      {...restProps}
+      ref={ref as Ref<HTMLSpanElement>}
+      className={className}
+      style={mergedStyle}
+    >
+      {children}
+    </span>
   );
 }
 

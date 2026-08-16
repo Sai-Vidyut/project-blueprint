@@ -121,11 +121,16 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply bg-background font-sans;
+    color-scheme: dark;
+    min-height: 100dvh;
+    overscroll-behavior-y: none;
+    text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
+    min-height: 100dvh;
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
@@ -137,12 +142,12 @@
   background-image:
     linear-gradient(
       to right,
-      color-mix(in oklch, var(--foreground) 4.5%, transparent) 1px,
+      color-mix(in oklab, var(--foreground) 4.5%, transparent) 1px,
       transparent 1px
     ),
     linear-gradient(
       to bottom,
-      color-mix(in oklch, var(--foreground) 4.5%, transparent) 1px,
+      color-mix(in oklab, var(--foreground) 4.5%, transparent) 1px,
       transparent 1px
     );
   background-position: center top;
@@ -150,10 +155,27 @@
   mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black, transparent 75%);
 }
 
+.outage-field-grid {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--foreground) 4%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--foreground) 4%, transparent) 1px,
+      transparent 1px
+    );
+  background-position: center;
+  background-size: 3.5rem 3.5rem;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 42%, black, transparent 78%);
+}
+
 .bg-page-glow {
   background-image: radial-gradient(
     ellipse 70% 40% at 50% -8%,
-    color-mix(in oklch, var(--foreground) 7%, transparent),
+    color-mix(in oklab, var(--foreground) 7%, transparent),
     transparent 58%
   );
 }
@@ -166,14 +188,39 @@
 }
 
 .glass-surface {
-  background-color: color-mix(in oklch, var(--card) 72%, transparent);
+  /* Mix in oklab, not oklch: polar hue interpolation with `transparent`
+     (hue 0 / red) is what turns glass maroon in Blink. oklab has no hue. */
+  background-color: color-mix(in oklab, var(--card) 72%, transparent);
   box-shadow:
     inset 0 1px 0 0 oklch(1 0 0 / 14%),
     0 18px 40px -24px oklch(0 0 0 / 45%);
 }
 
+/*
+  Sticky header surface. The glass must continue above the header box so
+  Chrome's collapsing toolbar / overscroll cannot reveal the page backdrop.
+  Do not reuse the inset 1px highlight — it reads as a gap under the browser UI.
+*/
+.glass-header {
+  isolation: isolate;
+  background-color: color-mix(in oklab, var(--card) 72%, transparent);
+  box-shadow: 0 18px 40px -24px oklch(0 0 0 / 45%);
+}
+
+.glass-header::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  top: calc(100svh - 100lvh - 4rem);
+  z-index: -1;
+  pointer-events: none;
+  background-color: inherit;
+}
+
 .glass-surface-strong {
-  background-color: color-mix(in oklch, var(--card) 90%, transparent);
+  background-color: color-mix(in oklab, var(--card) 90%, transparent);
   box-shadow:
     inset 0 1px 0 0 oklch(1 0 0 / 16%),
     0 22px 48px -28px oklch(0 0 0 / 50%);
@@ -181,12 +228,21 @@
 
 @supports (backdrop-filter: blur(1px)) {
   .glass-surface {
-    background-color: color-mix(in oklch, var(--card) 58%, transparent);
+    background-color: color-mix(in oklab, var(--card) 58%, transparent);
     backdrop-filter: blur(22px) saturate(150%);
   }
 
+  .glass-header {
+    background-color: color-mix(in oklab, var(--card) 58%, transparent);
+    backdrop-filter: blur(22px) saturate(150%);
+  }
+
+  .glass-header::before {
+    backdrop-filter: inherit;
+  }
+
   .glass-surface-strong {
-    background-color: color-mix(in oklch, var(--card) 82%, transparent);
+    background-color: color-mix(in oklab, var(--card) 82%, transparent);
     backdrop-filter: blur(28px) saturate(160%);
     box-shadow:
       inset 0 1px 0 0 oklch(1 0 0 / 16%),
@@ -195,13 +251,13 @@
 }
 
 .glass-chip {
-  background-color: color-mix(in oklch, var(--card) 55%, transparent);
+  background-color: color-mix(in oklab, var(--card) 55%, transparent);
   box-shadow: inset 0 1px 0 0 oklch(1 0 0 / 12%);
 }
 
 @supports (backdrop-filter: blur(1px)) {
   .glass-chip {
-    background-color: color-mix(in oklch, var(--card) 38%, transparent);
+    background-color: color-mix(in oklab, var(--card) 38%, transparent);
     backdrop-filter: blur(14px) saturate(140%);
   }
 }
@@ -212,9 +268,83 @@
   }
 
   .glass-surface,
+  .glass-header,
   .glass-chip,
   [data-slot="button"],
   [data-slot="card"] {
     transition-duration: 0.01ms !important;
   }
+
+  .outage-bob,
+  .outage-steam,
+  .outage-dash,
+  .outage-glow {
+    animation: none !important;
+  }
+}
+
+@keyframes outage-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes outage-steam {
+  0% {
+    opacity: 0.12;
+    transform: translateY(3px);
+  }
+  55% {
+    opacity: 0.5;
+    transform: translateY(-7px);
+  }
+  100% {
+    opacity: 0.08;
+    transform: translateY(-14px);
+  }
+}
+
+@keyframes outage-dash {
+  to {
+    stroke-dashoffset: -56;
+  }
+}
+
+@keyframes outage-glow {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+.outage-bob {
+  animation: outage-bob 4.8s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.outage-steam {
+  animation: outage-steam 3.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+
+.outage-steam-delay {
+  animation-delay: 0.7s;
+}
+
+.outage-dash {
+  stroke-dasharray: 5 11;
+  animation: outage-dash 14s linear infinite;
+}
+
+.outage-glow {
+  animation: outage-glow 8s ease-in-out infinite;
 }
