@@ -1,4 +1,4 @@
-# Project BluePrint
+# BluePrint
 
 AI-powered software planning tool that converts a software idea into a developer-grade implementation blueprint.
 
@@ -37,7 +37,8 @@ Describe an idea and receive a structured plan: target users, key features, MVP 
 ```text
 src/
 ├── app/                        # Routes and API
-│   ├── page.tsx                # Idea input + blueprint results
+│   ├── page.tsx                # Landing page
+│   ├── create/page.tsx         # Idea input + blueprint results
 │   └── api/blueprint/route.ts  # POST idea → Blueprint JSON
 ├── components/                 # Idea form, section cards, Mermaid viewer
 ├── lib/
@@ -195,9 +196,10 @@ FORCE_HF_FAILURE=true
 
 These flags are ignored in production.
 
-1. Enter a software idea (at least 10 characters).
-2. Click **Generate Blueprint**. The UI calls `POST /api/blueprint`, which calls the configured model and returns a validated `Blueprint`.
-3. Confirm all sections render: project summary, target users, key features, MVP scope, architecture + diagram, tech stack, database schema, API endpoints, authentication, deployment, complexity, risks, future enhancements, and roadmap.
+1. Open `/` and click **Get Started** (or go to `/create`).
+2. Enter a software idea (at least 10 characters).
+3. Click **Generate Blueprint**. The UI calls `POST /api/blueprint`, which calls the configured model and returns a validated `Blueprint`.
+4. Confirm all sections render: project summary, target users, key features, MVP scope, architecture + diagram, tech stack, database schema, API endpoints, authentication, deployment, complexity, risks, future enhancements, and roadmap.
 
 ```bash
 npm run lint

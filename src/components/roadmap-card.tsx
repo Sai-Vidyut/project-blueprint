@@ -39,7 +39,7 @@ export function RoadmapCard({ roadmap }: RoadmapCardProps) {
             return (
               <li key={`${week.theme}-${weekIndex}`} className="flex gap-5 sm:gap-8">
                 <div className="flex flex-col items-center">
-                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full border bg-muted font-mono text-sm">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 font-mono text-sm">
                     {weekIndex + 1}
                   </div>
                   {!isLastWeek ? (

@@ -102,7 +102,7 @@ export function IdeaForm({
             {idea.trim().length}/{IDEA_MAX_LENGTH}
             <span className="hidden sm:inline"> · ⌘ Enter</span>
           </p>
-          <Button type="submit" size="lg" disabled={isGenerating}>
+          <Button type="submit" size="lg" disabled={isGenerating} className="min-h-11 px-4">
             {isGenerating ? (
               <>
                 <Spinner data-icon="inline-start" />

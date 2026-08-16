@@ -1,20 +1,30 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 
-import { generateBlueprint } from "@/lib/api/generate-blueprint";
+import { AppBackdrop } from "@/components/app-backdrop";
 import {
   BlueprintDashboard,
   type BlueprintDashboardStatus,
 } from "@/components/blueprint-dashboard";
-import { ExampleIdeas } from "@/components/example-ideas";
+import {
+  ExampleIdeas,
+  getCanonicalExampleIdeas,
+  getClientShuffledExampleIdeas,
+  subscribeExampleIdeaOrder,
+} from "@/components/example-ideas";
 import { IdeaForm } from "@/components/idea-form";
 import { SiteHeader } from "@/components/site-header";
-import { Badge } from "@/components/ui/badge";
+import { generateBlueprint } from "@/lib/api/generate-blueprint";
 import type { Blueprint } from "@/types/blueprint";
 
 export function BlueprintHome() {
   const [idea, setIdea] = useState("");
+  const exampleIdeas = useSyncExternalStore(
+    subscribeExampleIdeaOrder,
+    getClientShuffledExampleIdeas,
+    getCanonicalExampleIdeas,
+  );
   const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
   const [status, setStatus] = useState<BlueprintDashboardStatus>("empty");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -70,14 +80,7 @@ export function BlueprintHome() {
 
   return (
     <div className="relative flex min-h-full flex-1 flex-col">
-      <div
-        aria-hidden="true"
-        className="bg-page-glow pointer-events-none absolute inset-x-0 top-0 h-[32rem]"
-      />
-      <div
-        aria-hidden="true"
-        className="bg-page-grid pointer-events-none absolute inset-x-0 top-0 h-[32rem]"
-      />
+      <AppBackdrop />
 
       <SiteHeader />
 
@@ -85,9 +88,6 @@ export function BlueprintHome() {
         <section
           className="mx-auto flex w-full max-w-3xl flex-col items-center gap-10 text-center"
         >
-          <Badge variant="secondary" className="text-sm">
-            Idea to blueprint in 30 seconds
-          </Badge>
           <div className="flex flex-col gap-5">
             <h1 className="font-heading text-[2.25rem] leading-[1.06] font-medium tracking-tight text-balance sm:text-5xl lg:text-6xl">
               Turn a software idea into an implementation-ready plan.
@@ -105,6 +105,8 @@ export function BlueprintHome() {
               onGenerate={handleGenerate}
             />
             <ExampleIdeas
+              ideas={exampleIdeas}
+              selectedIdea={idea}
               onSelect={handleTryExample}
               disabled={isGenerating}
             />
@@ -120,6 +122,7 @@ export function BlueprintHome() {
           <BlueprintDashboard
             status={status}
             idea={idea}
+            exampleIdeas={exampleIdeas}
             blueprint={blueprint}
             errorMessage={errorMessage}
             onTryExample={handleTryExample}

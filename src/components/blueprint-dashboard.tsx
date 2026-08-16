@@ -48,6 +48,7 @@ export type BlueprintDashboardStatus =
 type BlueprintDashboardProps = {
   status: BlueprintDashboardStatus;
   idea?: string;
+  exampleIdeas?: readonly string[];
   blueprint?: Blueprint | null;
   errorMessage?: string | null;
   onTryExample?: (idea: string) => void;
@@ -57,6 +58,7 @@ type BlueprintDashboardProps = {
 export function BlueprintDashboard({
   status,
   idea,
+  exampleIdeas,
   blueprint,
   errorMessage,
   onTryExample,
@@ -90,7 +92,11 @@ export function BlueprintDashboard({
       />
 
       {status === "empty" ? (
-        <DashboardEmptyState onTryExample={onTryExample} />
+        <DashboardEmptyState
+          idea={idea}
+          exampleIdeas={exampleIdeas}
+          onTryExample={onTryExample}
+        />
       ) : null}
       {status === "error" ? (
         <DashboardErrorState message={errorMessage} onRetry={onRetry} />
@@ -243,19 +249,29 @@ function DashboardHeader({
         ) : null}
       </div>
       {status === "success" && !isGeneratingView && blueprint ? (
-        <CopyButton text={copyText} label="Copy all" />
+        <CopyButton
+          text={copyText}
+          label="Copy all"
+          variant="default"
+          size="default"
+          className="h-9 rounded-xl px-3.5"
+        />
       ) : null}
     </div>
   );
 }
 
 function DashboardEmptyState({
+  idea,
+  exampleIdeas,
   onTryExample,
 }: {
+  idea?: string;
+  exampleIdeas?: readonly string[];
   onTryExample?: (idea: string) => void;
 }) {
   return (
-    <Empty className="min-h-80 border border-dashed bg-muted/10 py-12 sm:min-h-96 sm:py-16">
+    <Empty className="glass-surface min-h-80 border border-white/12 py-12 sm:min-h-96 sm:py-16">
       <EmptyHeader className="max-w-xl">
         <EmptyMedia variant="icon">
           <LayersIcon />
@@ -271,6 +287,8 @@ function DashboardEmptyState({
       </EmptyHeader>
       {onTryExample ? (
         <ExampleIdeas
+          ideas={exampleIdeas}
+          selectedIdea={idea}
           onSelect={onTryExample}
           className="mt-8 w-full max-w-2xl px-6"
         />
@@ -287,7 +305,7 @@ function DashboardErrorState({
   onRetry?: () => void;
 }) {
   return (
-    <Empty className="min-h-48 border border-dashed bg-muted/10 py-12 sm:py-16">
+    <Empty className="glass-surface min-h-48 border border-white/12 py-12 sm:py-16">
       <EmptyHeader className="max-w-lg">
         <EmptyMedia variant="icon">
           <TriangleAlertIcon />

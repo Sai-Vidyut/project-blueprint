@@ -1,5 +1,5 @@
-import { BlueprintHome } from "@/components/blueprint-home";
+import { LandingPage } from "@/components/landing-page";
 
 export default function HomePage() {
-  return <BlueprintHome />;
+  return <LandingPage />;
 }

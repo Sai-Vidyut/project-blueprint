@@ -14,9 +14,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Project BluePrint",
+  applicationName: "BluePrint",
+  title: "BluePrint",
   description:
     "Turn a software idea into architecture, a technology stack, a diagram, and a four-week development roadmap.",
+  openGraph: {
+    title: "BluePrint",
+    description:
+      "Turn a software idea into architecture, a technology stack, a diagram, and a four-week development roadmap.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "BluePrint",
+    description:
+      "Turn a software idea into architecture, a technology stack, a diagram, and a four-week development roadmap.",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

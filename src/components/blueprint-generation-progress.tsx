@@ -85,7 +85,7 @@ export function BlueprintGenerationProgress({
       aria-label="Blueprint generation progress"
       aria-live="polite"
     >
-      <div className="flex flex-col gap-4 rounded-2xl border bg-card/60 p-6 sm:p-8">
+      <div className="glass-surface flex flex-col gap-4 rounded-2xl border border-white/12 p-6 sm:p-8">
         <ProgressBar value={displayProgress} />
         <div className="flex flex-col gap-2">
           <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">

@@ -2,7 +2,7 @@
 
 ## System overview
 
-Project BluePrint is a **modular monolith**: one Next.js application that both renders the UI and calls the model. There is no database, auth service, or worker queue. A blueprint exists only in the current browser session.
+BluePrint is a **modular monolith**: one Next.js application that both renders the UI and calls the model. There is no database, auth service, or worker queue. A blueprint exists only in the current browser session.
 
 ```mermaid
 flowchart LR
@@ -34,7 +34,7 @@ flowchart LR
 
 ```text
 src/
-├── app/            # Routes and API (page.tsx, api/blueprint/route.ts)
+├── app/            # Routes: `/` landing, `/create` generator, `api/blueprint`
 ├── components/     # Idea form, results view, Mermaid renderer
 ├── lib/
 │   ├── ai/
