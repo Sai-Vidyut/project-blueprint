@@ -5,8 +5,9 @@ UI building blocks for the single-page blueprint flow. Keep these presentational
 | File | Role |
 | --- | --- |
 | `blueprint-home.tsx` | Client orchestrator: idea submit → `POST /api/blueprint` |
-| `blueprint-dashboard.tsx` | Results dashboard: empty, staged loading, success, error |
-| `generation-progress.tsx` | Staged generation steps (intelligent progress UI) |
+| `blueprint-dashboard.tsx` | Results dashboard: empty, generation progress, success, error |
+| `blueprint-generation-progress.tsx` | Motion progress bar, rotating stages, skeleton cards |
+| `ui/progress-bar.tsx` | Animated progress bar |
 | `example-ideas.tsx` | Clickable example prompts |
 | `copy-button.tsx` | Copy-to-clipboard for blueprint sections |
 | `site-header.tsx` | Sticky wordmark header |

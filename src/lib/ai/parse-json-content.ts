@@ -11,7 +11,11 @@ export function parseJsonFromModelContent(content: string): unknown {
   const trimmed = content.trim();
 
   if (!trimmed) {
-    throw new AIProviderError("Model returned an empty response.");
+    throw new AIProviderError(
+      "Model returned an empty response.",
+      undefined,
+      "invalid_json",
+    );
   }
 
   const candidates = collectJsonCandidates(trimmed);
@@ -25,7 +29,11 @@ export function parseJsonFromModelContent(content: string): unknown {
   }
 
   logParseFailure(content, trimmed);
-  throw new AIProviderError("Model response was not valid JSON.");
+  throw new AIProviderError(
+    "Model response was not valid JSON.",
+    undefined,
+    "invalid_json",
+  );
 }
 
 function collectJsonCandidates(trimmed: string): string[] {

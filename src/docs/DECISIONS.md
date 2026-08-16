@@ -18,11 +18,11 @@
 
 ## D3 — Provider-agnostic AI module, interface before implementation
 
-**Choice:** `src/lib/ai/types.ts` defines the `AIProvider` interface. `src/lib/ai/provider.ts` is a factory. Gemini (`@google/genai` Interactions API, `ai.interactions.create`) is the default. OpenRouter stays behind `AI_PROVIDER=openrouter`. Prompts live in `src/prompts`. Env (`GEMINI_API_KEY`, `GEMINI_MODEL`, `OPENROUTER_API_KEY`, `OPENROUTER_MODEL`) is confined to the implementations.
+**Choice:** `src/lib/ai/types.ts` defines the `AIProvider` interface. `src/lib/ai/provider.ts` is a factory. Gemini is the default primary. Optional fallbacks, when their keys are set: Cerebras (`gpt-oss-120b` by default), Groq (`openai/gpt-oss-20b` by default, strict JSON Schema structured output), Hugging Face Inference Providers (`Qwen/Qwen3-32B` by default), then OpenRouter (dynamic free catalog, health registry, max three models). Prompts live in `src/prompts`. Env is confined to the implementations.
 
-**Tradeoff:** Two implementations to maintain. The factory keeps the route handler vendor-agnostic, and Gemini's JSON mime type removes the need for a free-model fallback chain.
+**Tradeoff:** More providers to maintain. Unconfigured keys skip that step so Gemini-only still works. Catalog ranking for OpenRouter remains heuristic.
 
-**Rejected:** Embedding a vendor SDK directly in route handlers. Scattering prompt strings across components. Defaulting to OpenRouter free models with a retry chain.
+**Rejected:** Embedding a vendor SDK directly in route handlers. Requiring every API key. Auto-selecting paid OpenRouter models. Looping the entire free catalog. Falling back on invalid JSON / Zod failures. Treating HTTP 402 as a model-health cooldown.
 
 ## D4 — Zod schema is the source of truth; types are inferred
 

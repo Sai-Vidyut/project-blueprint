@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   CheckCircle2Icon,
   LayersIcon,
@@ -10,6 +11,7 @@ import {
 import { ApiEndpointsCard } from "@/components/api-endpoints-card";
 import { ArchitectureCard } from "@/components/architecture-card";
 import { AuthenticationCard } from "@/components/authentication-card";
+import { BlueprintGenerationProgress } from "@/components/blueprint-generation-progress";
 import { ComplexityCard } from "@/components/complexity-card";
 import { CopyButton } from "@/components/copy-button";
 import { DatabaseSchemaCard } from "@/components/database-schema-card";
@@ -17,7 +19,6 @@ import { DeploymentCard } from "@/components/deployment-card";
 import { DiagramCard } from "@/components/diagram-card";
 import { ExampleIdeas } from "@/components/example-ideas";
 import { FutureEnhancementsCard } from "@/components/future-enhancements-card";
-import { GenerationProgress } from "@/components/generation-progress";
 import { KeyFeaturesCard } from "@/components/key-features-card";
 import { MvpScopeCard } from "@/components/mvp-scope-card";
 import { ProjectSummaryCard } from "@/components/project-summary-card";
@@ -61,20 +62,66 @@ export function BlueprintDashboard({
   onTryExample,
   onRetry,
 }: BlueprintDashboardProps) {
+  const [revealResults, setRevealResults] = useState(false);
+  const [previousStatus, setPreviousStatus] = useState(status);
+
+  if (status !== previousStatus) {
+    setPreviousStatus(status);
+    if (status !== "success") {
+      setRevealResults(false);
+    }
+  }
+
+  const handleProgressComplete = useCallback(() => {
+    setRevealResults(true);
+  }, []);
+
+  const isGeneratingView =
+    status === "loading" || (status === "success" && !revealResults);
+  const showResults = status === "success" && revealResults && Boolean(blueprint);
+
   return (
     <div className="flex flex-col gap-10 sm:gap-12">
-      <DashboardHeader status={status} idea={idea} blueprint={blueprint} />
+      <DashboardHeader
+        status={status}
+        idea={idea}
+        blueprint={blueprint}
+        isGeneratingView={isGeneratingView}
+      />
 
       {status === "empty" ? (
         <DashboardEmptyState onTryExample={onTryExample} />
       ) : null}
-      {status === "loading" ? <GenerationProgress /> : null}
       {status === "error" ? (
         <DashboardErrorState message={errorMessage} onRetry={onRetry} />
       ) : null}
-      {status === "success" && blueprint ? (
-        <BlueprintSections blueprint={blueprint} />
-      ) : null}
+
+      <AnimatePresence mode="wait">
+        {isGeneratingView ? (
+          <motion.div
+            key="generation-progress"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+          >
+            <BlueprintGenerationProgress
+              isComplete={status === "success"}
+              onComplete={handleProgressComplete}
+            />
+          </motion.div>
+        ) : null}
+        {showResults && blueprint ? (
+          <motion.div
+            key="blueprint-results"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            <BlueprintSections blueprint={blueprint} />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
@@ -128,10 +175,12 @@ function DashboardHeader({
   status,
   idea,
   blueprint,
+  isGeneratingView,
 }: {
   status: BlueprintDashboardStatus;
   idea?: string;
   blueprint?: Blueprint | null;
+  isGeneratingView: boolean;
 }) {
   const copyText = useMemo(() => {
     if (!blueprint) {
@@ -148,10 +197,10 @@ function DashboardHeader({
         <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
           Blueprint
         </p>
-        {status === "loading" ? (
+        {isGeneratingView ? (
           <Badge variant="secondary">In progress</Badge>
         ) : null}
-        {status === "success" ? (
+        {status === "success" && !isGeneratingView ? (
           <Badge variant="secondary">
             <CheckCircle2Icon data-icon="inline-start" />
             Ready to build
@@ -166,7 +215,7 @@ function DashboardHeader({
       </div>
       <div className="flex flex-col gap-4">
         <h2 className="font-heading text-3xl font-medium tracking-tight text-balance sm:text-4xl lg:text-5xl">
-          {status === "loading"
+          {isGeneratingView
             ? "Crafting your blueprint"
             : status === "success"
               ? "Your implementation blueprint"
@@ -187,13 +236,13 @@ function DashboardHeader({
             a week-by-week roadmap.
           </p>
         ) : null}
-        {status === "loading" ? (
+        {isGeneratingView ? (
           <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
             We&apos;re structuring your idea into something you can ship.
           </p>
         ) : null}
       </div>
-      {status === "success" && blueprint ? (
+      {status === "success" && !isGeneratingView && blueprint ? (
         <CopyButton text={copyText} label="Copy all" />
       ) : null}
     </div>

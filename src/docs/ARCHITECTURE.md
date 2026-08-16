@@ -24,7 +24,7 @@ flowchart LR
 | Idea form | `src/components/` | Capture a short product idea; enforce length limits |
 | Blueprint view | `src/components/` | Render architecture, tech, diagram, roadmap; loading/error/empty states |
 | Route handler | `src/app/api/blueprint/route.ts` | Validate input, call the AI provider, return typed JSON |
-| AI abstraction | `src/lib/ai/` | `AIProvider` interface, factory, Gemini default, OpenRouter flag |
+| AI abstraction | `src/lib/ai/` | `AIProvider` interface, factory, Gemini primary, Cerebras → Groq → Hugging Face → OpenRouter failover |
 | Schemas | `src/lib/schemas/blueprint.ts`, `idea.ts` | Zod schemas — source of truth for the `Blueprint` type and request validation |
 | Types | `src/types/blueprint.ts` | Re-exports the `Blueprint` type inferred from the schema |
 | Prompts | `src/prompts/` | System prompt that instructs the model to return the `Blueprint` JSON shape |
@@ -39,9 +39,11 @@ src/
 ├── lib/
 │   ├── ai/
 │   │   ├── types.ts      # AIProvider interface, config, error types
-│   │   ├── config.ts     # Env: AI_PROVIDER, GEMINI_*, OPENROUTER_*
-│   │   ├── provider.ts   # Factory (Gemini default)
-│   │   └── providers/    # gemini.ts, openrouter.ts
+│   │   ├── config.ts     # Env: AI_PROVIDER, GEMINI_*, CEREBRAS_*, GROQ_*, HF_*, OPENROUTER_*
+│   │   ├── provider.ts   # Factory (Gemini default, ordered fallbacks)
+│   │   ├── openrouter-catalog.ts  # Free-model discovery, ranking, cache
+│   │   ├── openrouter-health.ts   # Process-local known-good / unhealthy registries
+│   │   └── providers/    # gemini.ts, cerebras.ts, groq.ts, huggingface.ts, openrouter.ts
 │   ├── schemas/
 │   │   ├── blueprint.ts  # Zod schema — Blueprint source of truth, types inferred via z.infer
 │   │   └── idea.ts       # Request validation for POST /api/blueprint
@@ -86,14 +88,14 @@ interface Blueprint {
 
 ## Integrations
 
-- **Model provider** through the `AIProvider` interface. Default is Gemini (`@google/genai` Interactions API, `GEMINI_API_KEY`). OpenRouter remains behind `AI_PROVIDER=openrouter`. API keys stay on the server.
+- **Model provider** through the `AIProvider` interface. Default is Gemini (`@google/genai` Interactions API, `GEMINI_API_KEY`). Optional fallbacks, in order: Cerebras (`CEREBRAS_API_KEY`), Groq (`GROQ_API_KEY`), Hugging Face Inference Providers (`HF_TOKEN`), OpenRouter (`OPENROUTER_API_KEY`, free catalog, max three models). Unconfigured keys skip that step. API keys stay on the server.
 - **Mermaid** in the browser only. The model returns structured architecture data, not an image. The client generates Mermaid from that data.
 
 No GitHub, payments, email, or object storage in the MVP.
 
 ## Security
 
-- Secrets only in server env (`GEMINI_API_KEY`, `OPENROUTER_API_KEY`).
+- Secrets only in server env (`GEMINI_API_KEY`, `CEREBRAS_API_KEY`, `GROQ_API_KEY`, `HF_TOKEN`, `OPENROUTER_API_KEY`).
 - Treat idea text as untrusted: length cap, no eval, sanitize nothing into HTML except via React text nodes; Mermaid render in a constrained component.
 - Do not log full prompts with user ideas in production if they may contain sensitive content.
 - Optional later: coarse in-memory rate limit on the route. Not required to demo.

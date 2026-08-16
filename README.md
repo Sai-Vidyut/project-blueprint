@@ -125,30 +125,56 @@ Create `.env.local` (gitignored). Do not commit secrets:
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `AI_PROVIDER` | No | `gemini` (default) or `openrouter` |
+| `AI_PROVIDER` | No | `gemini` (default), `cerebras`, `groq`, `huggingface`, or `openrouter`. When `gemini` (or unset), configured fallbacks run in order: Cerebras → Groq → Hugging Face → OpenRouter. |
 | `GEMINI_API_KEY` | Yes when `AI_PROVIDER=gemini` | Server-only Gemini API key |
-| `GEMINI_MODEL` | No | Preferred Gemini model (defaults to `gemini-3.6-flash`, the current Interactions API get-started model) |
-| `OPENROUTER_API_KEY` | Yes when `AI_PROVIDER=openrouter` | Server-only OpenRouter key |
-| `OPENROUTER_MODEL` | No | OpenRouter model id |
+| `GEMINI_MODEL` | No | Preferred Gemini model (defaults to `gemini-3.6-flash`) |
+| `CEREBRAS_API_KEY` | No | Optional first fallback. If unset, Cerebras is skipped. |
+| `CEREBRAS_MODEL` | No | Cerebras model id (defaults to `gpt-oss-120b`, current Cerebras structured-output model) |
+| `GROQ_API_KEY` | No | Optional second fallback. If unset, Groq is skipped. |
+| `GROQ_MODEL` | No | Groq model id (defaults to `openai/gpt-oss-20b`, which supports strict JSON Schema). Override in `.env.local`. |
+| `HF_TOKEN` | No | Optional third fallback (Hugging Face Inference Providers). If unset, Hugging Face is skipped. |
+| `HF_MODEL` | No | Hugging Face model id (defaults to `Qwen/Qwen3-32B`) |
+| `OPENROUTER_API_KEY` | No | Optional final fallback. Required when `AI_PROVIDER=openrouter`. If unset, OpenRouter is skipped. |
+| `OPENROUTER_MODEL` | No | Optional preferred OpenRouter model id. Tried first when set. Remaining attempts use currently available **free** catalog models. |
 | `AI_BASE_URL` | No | OpenRouter API base override |
 
-Gemini (default):
+Gemini (default) with optional fallbacks:
 
 ```bash
 AI_PROVIDER=gemini
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.6-flash
+CEREBRAS_API_KEY=
+CEREBRAS_MODEL=gpt-oss-120b
+GROQ_API_KEY=
+GROQ_MODEL=openai/gpt-oss-20b
+HF_TOKEN=
+HF_MODEL=Qwen/Qwen3-32B
+OPENROUTER_API_KEY=
+# Optional. Tried first on OpenRouter; otherwise free catalog models.
+# OPENROUTER_MODEL=
 ```
 
-OpenRouter:
+OpenRouter only (no Gemini):
 
 ```bash
 AI_PROVIDER=openrouter
 OPENROUTER_API_KEY=
-OPENROUTER_MODEL=
+# OPENROUTER_MODEL=
 ```
 
-Never expose `GEMINI_API_KEY` or `OPENROUTER_API_KEY` to the browser. All model calls go through `/api/blueprint`.
+### Provider failover
+
+When `AI_PROVIDER` is `gemini` (the default), every request tries Gemini first. If Gemini fails for a **transient** reason — rate limit (429), model unavailable, timeout, network error, or a transient 5xx — the same request is retried against the next **configured** provider:
+
+1. Cerebras (`CEREBRAS_API_KEY`)
+2. Groq (`GROQ_API_KEY`, default model `openai/gpt-oss-20b` with strict JSON Schema)
+3. Hugging Face Inference Providers (`HF_TOKEN`)
+4. OpenRouter (`OPENROUTER_API_KEY`) — dynamic free catalog, health registry, max 3 models
+
+A successful provider stops the chain. Missing keys skip that step without breaking Gemini. HTTP 402 / payment-quota on an optional provider skips to the next configured fallback (it is not a model-health failure). Failover does **not** trigger for malformed JSON, a `blueprintSchema` validation failure, or a bad request. If the last provider returns 402, that error is returned.
+
+Never expose `GEMINI_API_KEY`, `CEREBRAS_API_KEY`, `GROQ_API_KEY`, `HF_TOKEN`, or `OPENROUTER_API_KEY` to the browser. All model calls go through `/api/blueprint`.
 
 ## Development
 
@@ -157,6 +183,17 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+In development only (`NODE_ENV=development`), you can inject a provider failure **before** that provider’s API call, to exercise the fallback chain without burning quota:
+
+```bash
+FORCE_GEMINI_FAILURE=true
+FORCE_CEREBRAS_FAILURE=true
+FORCE_GROQ_FAILURE=true
+FORCE_HF_FAILURE=true
+```
+
+These flags are ignored in production.
 
 1. Enter a software idea (at least 10 characters).
 2. Click **Generate Blueprint**. The UI calls `POST /api/blueprint`, which calls the configured model and returns a validated `Blueprint`.
@@ -171,7 +208,7 @@ npm run build
 
 **Live:** [https://project-blueprint-eight.vercel.app](https://project-blueprint-eight.vercel.app)
 
-Deploy the Next.js app to Vercel (or any Node host that supports Next.js). Set `GEMINI_API_KEY` and optionally `AI_PROVIDER=gemini` and `GEMINI_MODEL=gemini-3.6-flash`. For OpenRouter, set `AI_PROVIDER=openrouter` and `OPENROUTER_API_KEY`. There is no database to provision.
+Deploy the Next.js app to Vercel (or any Node host that supports Next.js). Set `GEMINI_API_KEY` (required for the default Gemini-primary flow). Optional fallbacks: `CEREBRAS_API_KEY`, `GROQ_API_KEY`, `HF_TOKEN`, `OPENROUTER_API_KEY`. There is no database to provision.
 
 ## Documentation
 
