@@ -90,8 +90,8 @@ export function BlueprintHome() {
     <div
       className={
         status === "outage"
-          ? "relative flex h-dvh min-h-0 flex-1 flex-col overflow-hidden"
-          : "relative flex min-h-0 flex-1 flex-col"
+          ? "relative flex h-dvh min-h-0 flex-col overflow-hidden"
+          : "relative flex min-h-dvh flex-col"
       }
     >
       <AppBackdrop />

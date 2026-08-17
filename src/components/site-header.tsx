@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { DraftingCompassIcon } from "lucide-react";
 
@@ -17,8 +20,43 @@ type SiteHeaderProps = {
 };
 
 export function SiteHeader({ showGetStarted = false }: SiteHeaderProps) {
+  const [collapsed, setCollapsed] = useState(false);
+  const lastScrollRef = useRef(0);
+
+  useEffect(() => {
+    lastScrollRef.current = window.scrollY;
+
+    function onScroll(event: Event) {
+      const y = readScrollTop(event.target);
+      const last = lastScrollRef.current;
+      const delta = y - last;
+      lastScrollRef.current = y;
+
+      if (y <= 16) {
+        setCollapsed(false);
+        return;
+      }
+
+      if (delta > 6) {
+        setCollapsed(true);
+      } else if (delta < -6) {
+        setCollapsed(false);
+      }
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
   return (
-    <header className="glass-header sticky top-0 z-10 shrink-0 border-b border-white/10">
+    <header
+      className={cn(
+        "glass-header sticky top-0 z-10 shrink-0 border-b border-white/10 transition-transform duration-300 ease-out motion-reduce:transition-none",
+        collapsed && "pointer-events-none -translate-y-full",
+      )}
+    >
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
         <Link
           href="/"
@@ -72,4 +110,12 @@ export function SiteHeader({ showGetStarted = false }: SiteHeaderProps) {
       </div>
     </header>
   );
+}
+
+function readScrollTop(target: EventTarget | null): number {
+  if (target instanceof HTMLElement) {
+    return target.scrollTop;
+  }
+
+  return window.scrollY;
 }

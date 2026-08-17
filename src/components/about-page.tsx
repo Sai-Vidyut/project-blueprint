@@ -23,7 +23,7 @@ const SOCIAL_ICONS = {
 
 export function AboutPage() {
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col">
+    <div className="relative flex min-h-dvh flex-col">
       <AppBackdrop />
       <SiteHeader showGetStarted />
 
