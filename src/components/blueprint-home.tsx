@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { AiOutageState } from "@/components/ai-outage-state";
 import { AppBackdrop } from "@/components/app-backdrop";
+import { Bluebot } from "@/components/bluebot";
 import {
   BlueprintDashboard,
   type BlueprintDashboardStatus,
@@ -17,7 +18,11 @@ import {
 import { IdeaForm } from "@/components/idea-form";
 import { SiteHeader } from "@/components/site-header";
 import { AiServiceUnavailableError, generateBlueprint } from "@/lib/api/generate-blueprint";
+import { blueprintSchema } from "@/lib/schemas/blueprint";
+import type { BluebotChanges, BlueprintSectionKey } from "@/lib/schemas/bluebot";
 import type { Blueprint } from "@/types/blueprint";
+
+const HIGHLIGHT_DURATION_MS = 6_000;
 
 export function BlueprintHome() {
   const [idea, setIdea] = useState("");
@@ -27,16 +32,37 @@ export function BlueprintHome() {
     getCanonicalExampleIdeas,
   );
   const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
+  const [previousBlueprint, setPreviousBlueprint] = useState<Blueprint | null>(null);
   const [status, setStatus] = useState<BlueprintDashboardStatus | "outage">(
     "empty",
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [highlightedSections, setHighlightedSections] = useState<
+    Set<BlueprintSectionKey>
+  >(new Set());
+  const [updatedSections, setUpdatedSections] = useState<Set<BlueprintSectionKey>>(
+    new Set(),
+  );
+  const [bluebotOpen, setBluebotOpen] = useState(false);
   const resultsRef = useRef<HTMLElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+      }
+    };
+  }, []);
 
   async function handleGenerate(nextIdea: string) {
     setIdea(nextIdea);
     setBlueprint(null);
+    setPreviousBlueprint(null);
+    setHighlightedSections(new Set());
+    setUpdatedSections(new Set());
+    setBluebotOpen(false);
     setErrorMessage(null);
     setStatus("loading");
 
@@ -84,7 +110,48 @@ export function BlueprintHome() {
     }
   }
 
+  const handleBlueprintChange = useCallback(
+    (nextBlueprint: Blueprint, changes: BluebotChanges) => {
+      const validated = blueprintSchema.safeParse(nextBlueprint);
+      if (!validated.success) {
+        setErrorMessage(
+          "BlueBot returned an invalid Blueprint. Your current plan was kept unchanged.",
+        );
+        return;
+      }
+
+      if (blueprint) {
+        setPreviousBlueprint(blueprint);
+      }
+
+      setBlueprint(validated.data);
+      setUpdatedSections(new Set(changes.changedSections));
+      setHighlightedSections(new Set(changes.changedSections));
+
+      if (highlightTimerRef.current) {
+        clearTimeout(highlightTimerRef.current);
+      }
+
+      highlightTimerRef.current = setTimeout(() => {
+        setHighlightedSections(new Set());
+      }, HIGHLIGHT_DURATION_MS);
+    },
+    [blueprint],
+  );
+
+  const handleUndo = useCallback(() => {
+    if (!previousBlueprint) {
+      return;
+    }
+
+    setBlueprint(previousBlueprint);
+    setPreviousBlueprint(null);
+    setHighlightedSections(new Set());
+    setUpdatedSections(new Set());
+  }, [previousBlueprint]);
+
   const isGenerating = status === "loading";
+  const showBluebot = status === "success" && blueprint !== null;
 
   return (
     <div
@@ -142,12 +209,27 @@ export function BlueprintHome() {
               exampleIdeas={exampleIdeas}
               blueprint={blueprint}
               errorMessage={errorMessage}
+              highlightedSections={highlightedSections}
+              updatedSections={updatedSections}
+              onOpenBluebot={() => setBluebotOpen(true)}
               onTryExample={handleTryExample}
               onRetry={handleRetry}
             />
           </section>
         </main>
       )}
+
+      {showBluebot ? (
+        <Bluebot
+          blueprint={blueprint}
+          idea={idea}
+          open={bluebotOpen}
+          onOpenChange={setBluebotOpen}
+          onBlueprintChange={handleBlueprintChange}
+          onUndo={handleUndo}
+          canUndo={previousBlueprint !== null}
+        />
+      ) : null}
     </div>
   );
 }

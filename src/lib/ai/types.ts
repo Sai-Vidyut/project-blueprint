@@ -1,3 +1,4 @@
+import type { BluebotMessage, BluebotResponse } from "@/lib/schemas/bluebot";
 import type { Blueprint } from "@/types/blueprint";
 
 /**
@@ -7,6 +8,12 @@ import type { Blueprint } from "@/types/blueprint";
 export interface GenerateBlueprintInput {
   /** The raw idea text submitted by the user. */
   idea: string;
+}
+
+export interface BluebotChatInput {
+  blueprint: Blueprint;
+  messages: BluebotMessage[];
+  userMessage: string;
 }
 
 export type AIProviderKind =
@@ -36,6 +43,11 @@ export interface AIProviderConfig {
  */
 export interface AIProvider {
   generateBlueprint(input: GenerateBlueprintInput): Promise<Blueprint>;
+}
+
+/** BlueBot uses the same provider chain but a dedicated chat contract. */
+export interface BluebotProvider {
+  chat(input: BluebotChatInput): Promise<BluebotResponse>;
 }
 
 /**

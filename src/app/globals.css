@@ -281,6 +281,11 @@
   .outage-glow {
     animation: none !important;
   }
+
+  .bluebot-section-highlight {
+    animation: none !important;
+    box-shadow: 0 0 0 2px oklch(0.72 0.12 210 / 50%) !important;
+  }
 }
 
 @keyframes outage-bob {
@@ -347,4 +352,60 @@
 
 .outage-glow {
   animation: outage-glow 8s ease-in-out infinite;
+}
+
+@keyframes bluebot-section-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px oklch(0.72 0.12 210 / 35%),
+      0 0 24px -4px oklch(0.72 0.14 210 / 28%);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px oklch(0.78 0.14 210 / 55%),
+      0 0 32px -2px oklch(0.75 0.16 210 / 38%);
+  }
+}
+
+.bluebot-section-highlight {
+  animation: bluebot-section-glow 2.4s ease-in-out 2;
+  box-shadow:
+    0 0 0 1px oklch(0.72 0.12 210 / 40%),
+    0 0 20px -6px oklch(0.72 0.14 210 / 30%);
+}
+
+.bluebot-fab {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 2147483000;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 3rem;
+  padding: 0 1.25rem;
+  border-radius: 9999px;
+  border: 1px solid oklch(0.78 0.14 210 / 70%);
+  background: oklch(0.97 0.01 210);
+  color: oklch(0.2 0.02 260);
+  box-shadow:
+    0 0 0 1px oklch(0.72 0.14 210 / 35%),
+    0 12px 40px -8px oklch(0.72 0.16 210 / 45%);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1;
+  pointer-events: auto;
+}
+
+.bluebot-fab:hover {
+  background: oklch(1 0.01 210);
+  border-color: oklch(0.82 0.16 210 / 85%);
+}
+
+.bluebot-fab:focus-visible {
+  outline: 2px solid oklch(0.78 0.14 210);
+  outline-offset: 2px;
 }

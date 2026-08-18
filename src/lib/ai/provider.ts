@@ -1,15 +1,11 @@
 import { getCachedBlueprint, setCachedBlueprint } from "@/lib/ai/blueprint-cache";
+import { buildFailoverChain } from "@/lib/ai/failover-chain";
 import {
   getCerebrasFallbackConfig,
   getGroqFallbackConfig,
   getHuggingFaceFallbackConfig,
   getOpenRouterFallbackConfig,
 } from "@/lib/ai/config";
-import { createCerebrasProvider } from "@/lib/ai/providers/cerebras";
-import { createGeminiProvider } from "@/lib/ai/providers/gemini";
-import { createGroqProvider } from "@/lib/ai/providers/groq";
-import { createHuggingFaceProvider } from "@/lib/ai/providers/huggingface";
-import { createOpenRouterProvider } from "@/lib/ai/providers/openrouter";
 import {
   AIProviderError,
   isOptionalProviderAccessFailure,
@@ -21,12 +17,6 @@ import {
   type GenerateBlueprintInput,
 } from "@/lib/ai/types";
 import type { Blueprint } from "@/types/blueprint";
-
-type ChainStep = {
-  kind: AIProviderKind;
-  label: string;
-  provider: AIProvider;
-};
 
 const cerebrasFallbackConfig = getCerebrasFallbackConfig();
 const groqFallbackConfig = getGroqFallbackConfig();
@@ -77,115 +67,6 @@ if (openRouterFallbackConfig) {
   console.log(
     "[provider] OpenRouter fallback disabled — OPENROUTER_API_KEY not set",
   );
-}
-
-/**
- * Ordered failover chain. Unconfigured optional providers are omitted so
- * Gemini-only setups keep working. Later providers are never called after
- * an earlier success. Transient infra failures and payment/account-access
- * failures skip to the next configured provider. Invalid JSON, invalid Zod
- * shape, and bad requests stop the chain.
- *
- * Gemini → Cerebras → Groq → Hugging Face → OpenRouter
- */
-function buildFailoverChain(primary: AIProviderConfig): ChainStep[] {
-  const steps: ChainStep[] = [];
-
-  const appendRemainingFallbacks = (
-    after: "gemini" | "cerebras" | "groq" | "huggingface",
-  ) => {
-    if (
-      after === "gemini" &&
-      cerebrasFallbackConfig &&
-      primary.kind !== "cerebras"
-    ) {
-      steps.push({
-        kind: "cerebras",
-        label: "Cerebras",
-        provider: createCerebrasProvider(cerebrasFallbackConfig),
-      });
-    }
-
-    if (
-      (after === "gemini" || after === "cerebras") &&
-      groqFallbackConfig &&
-      primary.kind !== "groq"
-    ) {
-      steps.push({
-        kind: "groq",
-        label: "Groq",
-        provider: createGroqProvider(groqFallbackConfig),
-      });
-    }
-
-    if (
-      (after === "gemini" || after === "cerebras" || after === "groq") &&
-      huggingFaceFallbackConfig &&
-      primary.kind !== "huggingface"
-    ) {
-      steps.push({
-        kind: "huggingface",
-        label: "Hugging Face",
-        provider: createHuggingFaceProvider(huggingFaceFallbackConfig),
-      });
-    }
-
-    if (openRouterFallbackConfig && primary.kind !== "openrouter") {
-      steps.push({
-        kind: "openrouter",
-        label: "OpenRouter",
-        provider: createOpenRouterProvider(openRouterFallbackConfig),
-      });
-    }
-  };
-
-  if (primary.kind === "openrouter") {
-    return [
-      {
-        kind: "openrouter",
-        label: "OpenRouter",
-        provider: createOpenRouterProvider(primary),
-      },
-    ];
-  }
-
-  if (primary.kind === "huggingface") {
-    steps.push({
-      kind: "huggingface",
-      label: "Hugging Face",
-      provider: createHuggingFaceProvider(primary),
-    });
-    appendRemainingFallbacks("huggingface");
-    return steps;
-  }
-
-  if (primary.kind === "groq") {
-    steps.push({
-      kind: "groq",
-      label: "Groq",
-      provider: createGroqProvider(primary),
-    });
-    appendRemainingFallbacks("groq");
-    return steps;
-  }
-
-  if (primary.kind === "cerebras") {
-    steps.push({
-      kind: "cerebras",
-      label: "Cerebras",
-      provider: createCerebrasProvider(primary),
-    });
-    appendRemainingFallbacks("cerebras");
-    return steps;
-  }
-
-  steps.push({
-    kind: "gemini",
-    label: "Gemini",
-    provider: createGeminiProvider(primary),
-  });
-  appendRemainingFallbacks("gemini");
-  return steps;
 }
 
 function createFailoverProvider(primary: AIProviderConfig): AIProvider {

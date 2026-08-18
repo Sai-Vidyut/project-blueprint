@@ -164,7 +164,7 @@ async function requestGroqContent(args: {
  * Nulls are stripped before Zod, which still uses `.optional()`. Size
  * keywords are stripped; types, enums, and array item shapes remain.
  */
-function toGroqStrictJsonSchema(schema: unknown): { [key: string]: unknown } {
+export function toGroqStrictJsonSchema(schema: unknown): { [key: string]: unknown } {
   const cloned = structuredClone(schema) as Record<string, unknown>;
   delete cloned.$schema;
   applyGroqStrictConstraints(cloned);
@@ -234,7 +234,7 @@ function asGroqNullable(schema: unknown): unknown {
 }
 
 /** Groq strict optional fields arrive as `null`; Zod `.optional()` expects absence. */
-function omitNullProperties(value: unknown): unknown {
+export function omitNullProperties(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(omitNullProperties);
   }

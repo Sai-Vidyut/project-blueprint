@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   CheckCircle2Icon,
   LayersIcon,
+  SparklesIcon,
   TriangleAlertIcon,
 } from "lucide-react";
 
@@ -12,6 +13,7 @@ import { ApiEndpointsCard } from "@/components/api-endpoints-card";
 import { ArchitectureCard } from "@/components/architecture-card";
 import { AuthenticationCard } from "@/components/authentication-card";
 import { BlueprintGenerationProgress } from "@/components/blueprint-generation-progress";
+import { BlueprintSection } from "@/components/blueprint-section";
 import { ComplexityCard } from "@/components/complexity-card";
 import { CopyButton } from "@/components/copy-button";
 import { DatabaseSchemaCard } from "@/components/database-schema-card";
@@ -35,6 +37,8 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import type { BlueprintSectionKey } from "@/lib/schemas/bluebot";
+import { BLUEPRINT_SECTION_DOM_IDS } from "@/lib/utils/blueprint-sections";
 import { formatBlueprintForCopy } from "@/lib/utils/blueprint-format";
 import { generateMermaidFromArchitecture } from "@/lib/utils/generate-mermaid";
 import type { Blueprint } from "@/types/blueprint";
@@ -51,6 +55,9 @@ type BlueprintDashboardProps = {
   exampleIdeas?: readonly string[];
   blueprint?: Blueprint | null;
   errorMessage?: string | null;
+  highlightedSections?: ReadonlySet<BlueprintSectionKey>;
+  updatedSections?: ReadonlySet<BlueprintSectionKey>;
+  onOpenBluebot?: () => void;
   onTryExample?: (idea: string) => void;
   onRetry?: () => void;
 };
@@ -61,6 +68,9 @@ export function BlueprintDashboard({
   exampleIdeas,
   blueprint,
   errorMessage,
+  highlightedSections,
+  updatedSections,
+  onOpenBluebot,
   onTryExample,
   onRetry,
 }: BlueprintDashboardProps) {
@@ -89,6 +99,7 @@ export function BlueprintDashboard({
         idea={idea}
         blueprint={blueprint}
         isGeneratingView={isGeneratingView}
+        onOpenBluebot={onOpenBluebot}
       />
 
       {status === "empty" ? (
@@ -124,7 +135,11 @@ export function BlueprintDashboard({
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            <BlueprintSections blueprint={blueprint} />
+            <BlueprintSections
+              blueprint={blueprint}
+              highlightedSections={highlightedSections}
+              updatedSections={updatedSections}
+            />
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -132,47 +147,167 @@ export function BlueprintDashboard({
   );
 }
 
-function BlueprintSections({ blueprint }: { blueprint: Blueprint }) {
+function BlueprintSections({
+  blueprint,
+  highlightedSections,
+  updatedSections,
+}: {
+  blueprint: Blueprint;
+  highlightedSections?: ReadonlySet<BlueprintSectionKey>;
+  updatedSections?: ReadonlySet<BlueprintSectionKey>;
+}) {
   const diagram = useMemo(
     () => generateMermaidFromArchitecture(blueprint.architecture),
     [blueprint.architecture],
   );
 
+  const isHighlighted = (section: BlueprintSectionKey) =>
+    highlightedSections?.has(section) ?? false;
+  const isUpdated = (section: BlueprintSectionKey) =>
+    updatedSections?.has(section) ?? false;
+
   return (
     <div className="flex flex-col gap-8 sm:gap-10">
-      <ProjectSummaryCard projectSummary={blueprint.projectSummary} />
+      <BlueprintSection
+        section="projectSummary"
+        id={BLUEPRINT_SECTION_DOM_IDS.projectSummary}
+        highlighted={isHighlighted("projectSummary")}
+        showUpdatedIndicator={isUpdated("projectSummary")}
+      >
+        <ProjectSummaryCard projectSummary={blueprint.projectSummary} />
+      </BlueprintSection>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
-        <TargetUsersCard targetUsers={blueprint.targetUsers} />
-        <KeyFeaturesCard keyFeatures={blueprint.keyFeatures} />
+        <BlueprintSection
+          section="targetUsers"
+          id={BLUEPRINT_SECTION_DOM_IDS.targetUsers}
+          highlighted={isHighlighted("targetUsers")}
+          showUpdatedIndicator={isUpdated("targetUsers")}
+        >
+          <TargetUsersCard targetUsers={blueprint.targetUsers} />
+        </BlueprintSection>
+        <BlueprintSection
+          section="keyFeatures"
+          id={BLUEPRINT_SECTION_DOM_IDS.keyFeatures}
+          highlighted={isHighlighted("keyFeatures")}
+          showUpdatedIndicator={isUpdated("keyFeatures")}
+        >
+          <KeyFeaturesCard keyFeatures={blueprint.keyFeatures} />
+        </BlueprintSection>
       </div>
 
-      <MvpScopeCard mvpScope={blueprint.mvpScope} />
+      <BlueprintSection
+        section="mvpScope"
+        id={BLUEPRINT_SECTION_DOM_IDS.mvpScope}
+        highlighted={isHighlighted("mvpScope")}
+        showUpdatedIndicator={isUpdated("mvpScope")}
+      >
+        <MvpScopeCard mvpScope={blueprint.mvpScope} />
+      </BlueprintSection>
 
-      <DiagramCard diagram={diagram} />
+      <BlueprintSection
+        section="architecture"
+        id="blueprint-section-diagram"
+        highlighted={isHighlighted("architecture")}
+        showUpdatedIndicator={isUpdated("architecture")}
+      >
+        <DiagramCard diagram={diagram} />
+      </BlueprintSection>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
-        <ArchitectureCard architecture={blueprint.architecture} />
-        <TechStackCard techStack={blueprint.techStack} />
+        <BlueprintSection
+          section="architecture"
+          id={BLUEPRINT_SECTION_DOM_IDS.architecture}
+          highlighted={isHighlighted("architecture")}
+          showUpdatedIndicator={isUpdated("architecture")}
+        >
+          <ArchitectureCard architecture={blueprint.architecture} />
+        </BlueprintSection>
+        <BlueprintSection
+          section="techStack"
+          id={BLUEPRINT_SECTION_DOM_IDS.techStack}
+          highlighted={isHighlighted("techStack")}
+          showUpdatedIndicator={isUpdated("techStack")}
+        >
+          <TechStackCard techStack={blueprint.techStack} />
+        </BlueprintSection>
       </div>
 
-      <DatabaseSchemaCard databaseSchema={blueprint.databaseSchema} />
+      <BlueprintSection
+        section="databaseSchema"
+        id={BLUEPRINT_SECTION_DOM_IDS.databaseSchema}
+        highlighted={isHighlighted("databaseSchema")}
+        showUpdatedIndicator={isUpdated("databaseSchema")}
+      >
+        <DatabaseSchemaCard databaseSchema={blueprint.databaseSchema} />
+      </BlueprintSection>
 
-      <ApiEndpointsCard apiEndpoints={blueprint.apiEndpoints} />
+      <BlueprintSection
+        section="apiEndpoints"
+        id={BLUEPRINT_SECTION_DOM_IDS.apiEndpoints}
+        highlighted={isHighlighted("apiEndpoints")}
+        showUpdatedIndicator={isUpdated("apiEndpoints")}
+      >
+        <ApiEndpointsCard apiEndpoints={blueprint.apiEndpoints} />
+      </BlueprintSection>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
-        <AuthenticationCard authentication={blueprint.authentication} />
-        <DeploymentCard deployment={blueprint.deployment} />
+        <BlueprintSection
+          section="authentication"
+          id={BLUEPRINT_SECTION_DOM_IDS.authentication}
+          highlighted={isHighlighted("authentication")}
+          showUpdatedIndicator={isUpdated("authentication")}
+        >
+          <AuthenticationCard authentication={blueprint.authentication} />
+        </BlueprintSection>
+        <BlueprintSection
+          section="deployment"
+          id={BLUEPRINT_SECTION_DOM_IDS.deployment}
+          highlighted={isHighlighted("deployment")}
+          showUpdatedIndicator={isUpdated("deployment")}
+        >
+          <DeploymentCard deployment={blueprint.deployment} />
+        </BlueprintSection>
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
-        <ComplexityCard estimatedComplexity={blueprint.estimatedComplexity} />
-        <RisksCard risks={blueprint.risks} />
+        <BlueprintSection
+          section="estimatedComplexity"
+          id={BLUEPRINT_SECTION_DOM_IDS.estimatedComplexity}
+          highlighted={isHighlighted("estimatedComplexity")}
+          showUpdatedIndicator={isUpdated("estimatedComplexity")}
+        >
+          <ComplexityCard estimatedComplexity={blueprint.estimatedComplexity} />
+        </BlueprintSection>
+        <BlueprintSection
+          section="risks"
+          id={BLUEPRINT_SECTION_DOM_IDS.risks}
+          highlighted={isHighlighted("risks")}
+          showUpdatedIndicator={isUpdated("risks")}
+        >
+          <RisksCard risks={blueprint.risks} />
+        </BlueprintSection>
       </div>
 
-      <FutureEnhancementsCard futureEnhancements={blueprint.futureEnhancements} />
+      <BlueprintSection
+        section="futureEnhancements"
+        id={BLUEPRINT_SECTION_DOM_IDS.futureEnhancements}
+        highlighted={isHighlighted("futureEnhancements")}
+        showUpdatedIndicator={isUpdated("futureEnhancements")}
+      >
+        <FutureEnhancementsCard
+          futureEnhancements={blueprint.futureEnhancements}
+        />
+      </BlueprintSection>
 
-      <RoadmapCard roadmap={blueprint.roadmap} />
+      <BlueprintSection
+        section="roadmap"
+        id={BLUEPRINT_SECTION_DOM_IDS.roadmap}
+        highlighted={isHighlighted("roadmap")}
+        showUpdatedIndicator={isUpdated("roadmap")}
+      >
+        <RoadmapCard roadmap={blueprint.roadmap} />
+      </BlueprintSection>
     </div>
   );
 }
@@ -182,11 +317,13 @@ function DashboardHeader({
   idea,
   blueprint,
   isGeneratingView,
+  onOpenBluebot,
 }: {
   status: BlueprintDashboardStatus;
   idea?: string;
   blueprint?: Blueprint | null;
   isGeneratingView: boolean;
+  onOpenBluebot?: () => void;
 }) {
   const copyText = useMemo(() => {
     if (!blueprint) {
@@ -249,13 +386,27 @@ function DashboardHeader({
         ) : null}
       </div>
       {status === "success" && !isGeneratingView && blueprint ? (
-        <CopyButton
-          text={copyText}
-          label="Copy all"
-          variant="default"
-          size="default"
-          className="h-9 rounded-xl px-3.5"
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          {onOpenBluebot ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="default"
+              className="h-9 rounded-xl px-3.5"
+              onClick={onOpenBluebot}
+            >
+              <SparklesIcon data-icon="inline-start" />
+              Ask BlueBot
+            </Button>
+          ) : null}
+          <CopyButton
+            text={copyText}
+            label="Copy all"
+            variant="default"
+            size="default"
+            className="h-9 rounded-xl px-3.5"
+          />
+        </div>
       ) : null}
     </div>
   );
