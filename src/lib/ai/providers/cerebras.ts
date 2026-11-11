@@ -137,7 +137,7 @@ export function createCerebrasProvider(config: AIProviderConfig): AIProvider {
   };
 }
 
-function classifyCerebrasError(error: unknown): AIProviderError {
+export function classifyCerebrasError(error: unknown): AIProviderError {
   if (
     error instanceof Cerebras.APIConnectionTimeoutError ||
     error instanceof Cerebras.APIUserAbortError ||

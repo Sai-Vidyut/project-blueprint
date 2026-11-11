@@ -54,12 +54,33 @@ export function createBluebotProvider(config: AIProviderConfig): BluebotProvider
           return await chatWithProvider(step.kind, step.config, input);
         } catch (error) {
           const reason = error instanceof Error ? error.message : String(error);
-          console.error(`[bluebot] ${step.label} failed: ${reason}`);
+          if (error instanceof AIProviderError) {
+            console.error(`[bluebot] ${step.label} failed`, {
+              provider: step.kind,
+              model: step.config.model,
+              kind: error.kind,
+              status: error.statusCode,
+              message: reason,
+              stage:
+                error.kind === "invalid_json"
+                  ? "json_extraction"
+                  : error.kind === "invalid_shape"
+                    ? "response_validation"
+                    : error.kind === "incomplete_modification"
+                      ? "incomplete_modification"
+                      : "provider_request",
+            });
+          } else {
+            console.error(`[bluebot] ${step.label} failed: ${reason}`);
+          }
           lastError = error;
 
           const hasNextProvider = index < steps.length - 1;
 
-          if (shouldContinueToNextProvider(error, hasNextProvider)) {
+          if (
+            shouldContinueToNextProvider(error, hasNextProvider) ||
+            shouldBluebotContinueToNextProvider(error, hasNextProvider)
+          ) {
             continue;
           }
 
@@ -74,4 +95,19 @@ export function createBluebotProvider(config: AIProviderConfig): BluebotProvider
       throw createServiceUnavailableError(lastError, attemptedProviders);
     },
   };
+}
+
+/** Retry when a provider returns a modification without the required blueprint body. */
+function shouldBluebotContinueToNextProvider(
+  error: unknown,
+  hasNextProvider: boolean,
+): boolean {
+  if (!hasNextProvider) {
+    return false;
+  }
+
+  return (
+    error instanceof AIProviderError &&
+    error.kind === "incomplete_modification"
+  );
 }

@@ -41,7 +41,8 @@ export const bluebotMessageSchema = z.object({
 });
 
 export const bluebotChatRequestSchema = z.object({
-  blueprint: blueprintSchema,
+  blueprint: blueprintSchema.optional(),
+  idea: z.string().trim().max(2000).optional(),
   messages: z.array(bluebotMessageSchema).max(50),
   userMessage: z.string().trim().min(1).max(2000),
 });
@@ -94,6 +95,10 @@ export const bluebotApiErrorSchema = z.object({
       }),
     )
     .optional(),
+  /** Safe diagnostics — included in development only. */
+  kind: z.string().optional(),
+  provider: z.string().optional(),
+  stage: z.string().optional(),
 });
 
 export type BluebotMessage = z.infer<typeof bluebotMessageSchema>;

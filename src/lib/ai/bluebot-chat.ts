@@ -22,7 +22,9 @@ import {
   recordOpenRouterSuccess,
   recordOpenRouterTransientFailure,
 } from "@/lib/ai/openrouter-health";
-import { parseJsonFromModelContent } from "@/lib/ai/parse-json-content";
+import { classifyCerebrasError } from "@/lib/ai/providers/cerebras";
+import { classifyGeminiError } from "@/lib/ai/providers/gemini";
+import { parseBluebotJsonFromModelContent } from "@/lib/ai/parse-bluebot-json-content";
 import {
   omitNullProperties,
   toGroqStrictJsonSchema,
@@ -35,8 +37,8 @@ import {
 } from "@/lib/ai/types";
 import { bluebotResponseSchema, type BluebotResponse } from "@/lib/schemas/bluebot";
 import {
-  BLUEBOT_SYSTEM_PROMPT,
   buildBluebotUserPrompt,
+  getBluebotSystemPrompt,
 } from "@/prompts/bluebot";
 
 const GEMINI_TIMEOUT_MS = 60_000;
@@ -91,23 +93,68 @@ export async function chatWithProvider(
 function buildUserPrompt(input: BluebotChatInput): string {
   return buildBluebotUserPrompt({
     blueprint: input.blueprint,
+    idea: input.idea,
     messages: input.messages,
     userMessage: input.userMessage,
   });
+}
+
+function systemPromptFor(input: BluebotChatInput): string {
+  return getBluebotSystemPrompt(Boolean(input.blueprint));
 }
 
 function parseAndValidateBluebotResponse(
   content: string,
   provider: AIProviderKind,
 ): BluebotResponse {
-  const parsed = omitNullProperties(parseJsonFromModelContent(content));
+  let parsed: unknown;
+
+  try {
+    parsed = omitNullProperties(parseBluebotJsonFromModelContent(content));
+  } catch (parseError) {
+    if (parseError instanceof AIProviderError && parseError.kind === "invalid_json") {
+      console.error(
+        `[bluebot] JSON extraction failed (${provider}) before schema validation`,
+      );
+      throw parseError;
+    }
+    throw parseError;
+  }
+
   const validated = bluebotResponseSchema.safeParse(parsed);
 
   if (!validated.success) {
+    const partial = parsed as Record<string, unknown>;
+    const incompleteModification =
+      partial.modifiesBlueprint === true &&
+      partial.blueprint === undefined &&
+      validated.error.issues.some(
+        (issue) =>
+          issue.path.join(".") === "blueprint" &&
+          issue.message.includes("required when modifiesBlueprint"),
+      );
+
     console.error(
       `[bluebot] bluebotResponseSchema validation failed (${provider}):`,
       JSON.stringify(validated.error.issues, null, 2),
     );
+    console.error(
+      `[bluebot] Parsed keys:`,
+      parsed && typeof parsed === "object"
+        ? Object.keys(parsed as Record<string, unknown>)
+        : typeof parsed,
+    );
+
+    if (incompleteModification) {
+      throw new AIProviderError(
+        "AI provider returned an incomplete modification (missing blueprint).",
+        undefined,
+        "incomplete_modification",
+        undefined,
+        provider,
+      );
+    }
+
     throw new AIProviderError(
       "AI provider returned an invalid BlueBot response shape.",
       undefined,
@@ -155,7 +202,7 @@ async function chatWithGemini(
       {
         model,
         input: userPrompt,
-        system_instruction: BLUEBOT_SYSTEM_PROMPT,
+        system_instruction: systemPromptFor(input),
         store: false,
         response_format: {
           type: "text",
@@ -176,11 +223,17 @@ async function chatWithGemini(
 
     content = interaction.output_text?.trim();
   } catch (error) {
+    const { kind, statusCode } = classifyGeminiError(error);
+    console.error("[bluebot/gemini] interactions.create failed", {
+      kind,
+      status: statusCode,
+      message: error instanceof Error ? error.message : String(error),
+    });
     throw new AIProviderError(
       "Failed to reach the AI provider.",
       error,
-      "unknown",
-      undefined,
+      kind,
+      statusCode,
       "gemini",
     );
   }
@@ -236,7 +289,7 @@ async function chatWithCerebras(
     const completion = await client.chat.completions.create({
       model,
       messages: [
-        { role: "system", content: BLUEBOT_SYSTEM_PROMPT },
+        { role: "system", content: systemPromptFor(input) },
         { role: "user", content: userPrompt },
       ],
       max_completion_tokens: MAX_COMPLETION_TOKENS,
@@ -254,8 +307,8 @@ async function chatWithCerebras(
       throw new AIProviderError(
         completion.error.message || "Failed to reach the AI provider.",
         undefined,
-        "unknown",
-        undefined,
+        classifyHttpStatus(completion.status_code),
+        completion.status_code,
         "cerebras",
       );
     }
@@ -288,13 +341,13 @@ async function chatWithCerebras(
       throw error;
     }
 
-    throw new AIProviderError(
-      "Failed to reach the AI provider.",
-      error,
-      "unknown",
-      undefined,
-      "cerebras",
-    );
+    const classified = classifyCerebrasError(error);
+    console.error("[bluebot/cerebras] request failed", {
+      kind: classified.kind,
+      status: classified.statusCode,
+      message: classified.message,
+    });
+    throw classified;
   }
 }
 
@@ -335,7 +388,7 @@ async function chatWithGroq(
     const completion = await client.chat.completions.create({
       model,
       messages: [
-        { role: "system", content: BLUEBOT_SYSTEM_PROMPT },
+        { role: "system", content: systemPromptFor(input) },
         { role: "user", content: userPrompt },
       ],
       max_completion_tokens: MAX_COMPLETION_TOKENS,
@@ -377,10 +430,20 @@ async function chatWithGroq(
     }
 
     if (error instanceof Groq.APIError) {
+      const message = error.message.toLowerCase();
+      const isTokenBudgetError =
+        /rate_limit|tokens per minute|tpm|request too large/.test(message);
+      const kind =
+        error.status === 429 || isTokenBudgetError
+          ? "rate_limited"
+          : error.status
+            ? classifyHttpStatus(error.status)
+            : "unknown";
+
       throw new AIProviderError(
         error.message || "Failed to reach the AI provider.",
         error,
-        error.status ? classifyHttpStatus(error.status) : "unknown",
+        kind,
         error.status,
         "groq",
       );
@@ -430,7 +493,7 @@ async function chatWithHuggingFace(
         model,
         provider: "auto",
         messages: [
-          { role: "system", content: BLUEBOT_SYSTEM_PROMPT },
+          { role: "system", content: systemPromptFor(input) },
           { role: "user", content: userPrompt },
         ],
         max_tokens: MAX_COMPLETION_TOKENS,
@@ -545,6 +608,7 @@ async function chatWithOpenRouter(
         supportsJsonSchema: attempt.supportsJsonSchema,
         supportsReasoning: attempt.supportsReasoning,
         maxCompletionTokens: attempt.maxCompletionTokens,
+        systemPrompt: systemPromptFor(input),
         userPrompt,
       });
 
@@ -581,6 +645,7 @@ async function requestOpenRouterBluebot(args: {
   supportsJsonSchema: boolean;
   supportsReasoning: boolean;
   maxCompletionTokens?: number;
+  systemPrompt: string;
   userPrompt: string;
 }): Promise<BluebotResponse> {
   const maxTokens = Math.min(
@@ -592,7 +657,7 @@ async function requestOpenRouterBluebot(args: {
     model: args.model,
     max_tokens: maxTokens,
     messages: [
-      { role: "system", content: BLUEBOT_SYSTEM_PROMPT },
+      { role: "system", content: args.systemPrompt },
       { role: "user", content: args.userPrompt },
     ],
   };

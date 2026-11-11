@@ -4,7 +4,10 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 
 import { AiOutageState } from "@/components/ai-outage-state";
 import { AppBackdrop } from "@/components/app-backdrop";
-import { Bluebot } from "@/components/bluebot";
+import {
+  useBluebot,
+  useRegisterBluebotContext,
+} from "@/components/bluebot-context";
 import {
   BlueprintDashboard,
   type BlueprintDashboardStatus,
@@ -43,7 +46,7 @@ export function BlueprintHome() {
   const [updatedSections, setUpdatedSections] = useState<Set<BlueprintSectionKey>>(
     new Set(),
   );
-  const [bluebotOpen, setBluebotOpen] = useState(false);
+  const { openBluebot } = useBluebot();
   const resultsRef = useRef<HTMLElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -62,7 +65,6 @@ export function BlueprintHome() {
     setPreviousBlueprint(null);
     setHighlightedSections(new Set());
     setUpdatedSections(new Set());
-    setBluebotOpen(false);
     setErrorMessage(null);
     setStatus("loading");
 
@@ -151,7 +153,14 @@ export function BlueprintHome() {
   }, [previousBlueprint]);
 
   const isGenerating = status === "loading";
-  const showBluebot = status === "success" && blueprint !== null;
+
+  useRegisterBluebotContext({
+    idea,
+    blueprint,
+    onBlueprintChange: handleBlueprintChange,
+    onUndo: handleUndo,
+    canUndo: previousBlueprint !== null,
+  });
 
   return (
     <div
@@ -211,25 +220,13 @@ export function BlueprintHome() {
               errorMessage={errorMessage}
               highlightedSections={highlightedSections}
               updatedSections={updatedSections}
-              onOpenBluebot={() => setBluebotOpen(true)}
+              onOpenBluebot={openBluebot}
               onTryExample={handleTryExample}
               onRetry={handleRetry}
             />
           </section>
         </main>
       )}
-
-      {showBluebot ? (
-        <Bluebot
-          blueprint={blueprint}
-          idea={idea}
-          open={bluebotOpen}
-          onOpenChange={setBluebotOpen}
-          onBlueprintChange={handleBlueprintChange}
-          onUndo={handleUndo}
-          canUndo={previousBlueprint !== null}
-        />
-      ) : null}
     </div>
   );
 }

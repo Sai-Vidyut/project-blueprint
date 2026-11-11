@@ -199,7 +199,7 @@ async function requestBlueprintFromGemini(args: {
  * error objects expose the real status code directly (confirmed via a live
  * 429 response: `{ statusCode: 429, error: { code: "too_many_requests" } }`).
  */
-function classifyGeminiError(error: unknown): {
+export function classifyGeminiError(error: unknown): {
   kind: AIProviderErrorKind;
   statusCode?: number;
 } {

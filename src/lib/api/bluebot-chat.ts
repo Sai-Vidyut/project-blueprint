@@ -16,16 +16,24 @@ export class BluebotServiceUnavailableError extends Error {
 }
 
 export async function sendBluebotMessage(args: {
-  blueprint: import("@/types/blueprint").Blueprint;
+  blueprint?: import("@/types/blueprint").Blueprint;
+  idea?: string;
   messages: import("@/lib/schemas/bluebot").BluebotMessage[];
   userMessage: string;
 }): Promise<BluebotResponse> {
+  const payload = {
+    messages: args.messages,
+    userMessage: args.userMessage,
+    ...(args.blueprint ? { blueprint: args.blueprint } : {}),
+    ...(args.idea?.trim() ? { idea: args.idea.trim() } : {}),
+  };
+
   const response = await fetch("/api/blueprint/chat", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(args),
+    body: JSON.stringify(payload),
   });
 
   const data: unknown = await response.json().catch(() => null);
@@ -33,6 +41,17 @@ export async function sendBluebotMessage(args: {
   if (!response.ok) {
     const parsedError = bluebotApiErrorSchema.safeParse(data);
     const code = parsedError.success ? parsedError.data.error : undefined;
+
+    if (process.env.NODE_ENV === "development" && parsedError.success) {
+      console.error("[bluebot] API error", {
+        status: response.status,
+        error: parsedError.data.error,
+        kind: parsedError.data.kind,
+        provider: parsedError.data.provider,
+        stage: parsedError.data.stage,
+        issues: parsedError.data.issues,
+      });
+    }
 
     if (response.status === 503 && code === AI_SERVICE_UNAVAILABLE) {
       throw new BluebotServiceUnavailableError();

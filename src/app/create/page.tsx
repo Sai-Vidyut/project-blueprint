@@ -1,5 +1,10 @@
+import { BluebotShell } from "@/components/bluebot-shell";
 import { BlueprintHome } from "@/components/blueprint-home";
 
 export default function CreatePage() {
-  return <BlueprintHome />;
+  return (
+    <BluebotShell>
+      <BlueprintHome />
+    </BluebotShell>
+  );
 }

@@ -377,7 +377,7 @@
 
 .bluebot-fab {
   position: fixed;
-  right: max(1rem, env(safe-area-inset-right));
+  left: max(1rem, env(safe-area-inset-left));
   bottom: max(1rem, env(safe-area-inset-bottom));
   z-index: 2147483000;
   display: inline-flex;
@@ -386,12 +386,12 @@
   height: 3rem;
   padding: 0 1.25rem;
   border-radius: 9999px;
-  border: 1px solid oklch(0.78 0.14 210 / 70%);
-  background: oklch(0.97 0.01 210);
-  color: oklch(0.2 0.02 260);
+  border: 1px solid oklch(1 0 0 / 16%);
+  background: color-mix(in oklab, var(--card) 72%, transparent);
+  color: var(--foreground);
   box-shadow:
-    0 0 0 1px oklch(0.72 0.14 210 / 35%),
-    0 12px 40px -8px oklch(0.72 0.16 210 / 45%);
+    inset 0 1px 0 0 oklch(1 0 0 / 16%),
+    0 12px 40px -8px oklch(0 0 0 / 45%);
   cursor: pointer;
   font-family: inherit;
   font-size: 0.875rem;
@@ -400,12 +400,89 @@
   pointer-events: auto;
 }
 
+@supports (backdrop-filter: blur(1px)) {
+  .bluebot-fab {
+    background: color-mix(in oklab, var(--card) 55%, transparent);
+    backdrop-filter: blur(20px) saturate(150%);
+  }
+}
+
 .bluebot-fab:hover {
-  background: oklch(1 0.01 210);
-  border-color: oklch(0.82 0.16 210 / 85%);
+  border-color: oklch(0.78 0.14 210 / 45%);
+  box-shadow:
+    inset 0 1px 0 0 oklch(1 0 0 / 20%),
+    0 16px 44px -6px oklch(0.72 0.16 210 / 35%);
 }
 
 .bluebot-fab:focus-visible {
   outline: 2px solid oklch(0.78 0.14 210);
   outline-offset: 2px;
+}
+
+.bluebot-drawer {
+  box-shadow:
+    inset 1px 0 0 0 oklch(1 0 0 / 10%),
+    -24px 0 48px -24px oklch(0 0 0 / 55%),
+    0 0 48px -20px oklch(0.72 0.14 210 / 18%);
+}
+
+.bluebot-drawer-header {
+  background: color-mix(in oklab, var(--card) 70%, transparent);
+}
+
+@supports (backdrop-filter: blur(1px)) {
+  .bluebot-drawer-header {
+    backdrop-filter: blur(18px) saturate(150%);
+  }
+}
+
+@keyframes bluebot-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bluebot-message-in {
+  animation: bluebot-message-in 0.28s ease-out forwards;
+}
+
+@keyframes bluebot-typing-dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+.bluebot-typing-dot {
+  animation: bluebot-typing-dot 1.15s ease-in-out infinite;
+}
+
+.bluebot-typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.bluebot-typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bluebot-message-in {
+    animation: none;
+  }
+
+  .bluebot-typing-dot {
+    animation: none;
+    opacity: 0.7;
+  }
 }

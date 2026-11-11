@@ -11,7 +11,8 @@ export interface GenerateBlueprintInput {
 }
 
 export interface BluebotChatInput {
-  blueprint: Blueprint;
+  blueprint?: Blueprint;
+  idea?: string;
   messages: BluebotMessage[];
   userMessage: string;
 }
@@ -66,6 +67,7 @@ export type AIProviderErrorKind =
   | "bad_request"
   | "invalid_json"
   | "invalid_shape"
+  | "incomplete_modification"
   | "empty_response"
   | "payment_required"
   | "config"
